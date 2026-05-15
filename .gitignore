@@ -492,3 +492,6 @@ $RECYCLE.BIN/
 # OS
 .DS_Store
 Thumbs.db
+
+# Local cache files
+*.lscache
