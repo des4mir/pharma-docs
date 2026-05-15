@@ -495,3 +495,8 @@ Thumbs.db
 
 # Local cache files
 *.lscache
+
+# Local ASP.NET Core config
+backend/PharmaDocs.API/appsettings.json
+backend/PharmaDocs.API/appsettings.Development.json
+backend/PharmaDocs.API/appsettings.Local.json
