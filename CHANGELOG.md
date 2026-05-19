@@ -9,11 +9,21 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Planned
 
-- JWT authentication (`POST /api/auth/login`)
-- `AuthController` with login and token response
-- Response DTOs for GET endpoints
 - `SubmissionPackagesController` CRUD
 - `DocumentRecordsController` CRUD
+
+---
+
+## [0.4.0] - 2026-05-18
+
+### Added
+
+- `JwtTokenService` in Infrastructure — generates signed HS256 JWT tokens with standard claim types
+- `LoginDto` and `AuthResponseDto` in Application layer
+- `AuthController` with `POST /api/auth/login` — validates credentials with BCrypt, returns JWT
+- `System.IdentityModel.Tokens.Jwt` 8.4.0 package added to Infrastructure
+- `UseAuthentication()` middleware registered before `UseAuthorization()` in pipeline
+- JWT Bearer authentication fully configured in `Program.cs`
 
 ---
 
