@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using PharmaDocs.Domain.Entities;
 using PharmaDocs.Infrastructure.Data;
@@ -8,6 +9,7 @@ namespace PharmaDocs.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class ProductsController : ControllerBase
 {
     private readonly PharmaDocsDbContext _context;
@@ -29,6 +31,7 @@ public class ProductsController : ControllerBase
 
     // GET /api/products/{id}
     [HttpGet("{id:guid}")]
+    [Authorize]
     public async Task<IActionResult> GetById(Guid id)
     {
         var product = await _context.Products.FindAsync(id);
@@ -38,6 +41,7 @@ public class ProductsController : ControllerBase
 
     // POST /api/products
     [HttpPost]
+    [Authorize(Roles = "RegAffairsOfficer")]
     public async Task<IActionResult> Create([FromBody] CreateProductDto dto)
     {
         var product = new Product
@@ -63,6 +67,7 @@ public class ProductsController : ControllerBase
 
     // PUT /api/products/{id}
     [HttpPut("{id:guid}")]
+    [Authorize(Roles = "RegAffairsOfficer")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateProductDto dto)
     {
         var product = await _context.Products.FindAsync(id);
@@ -83,6 +88,7 @@ public class ProductsController : ControllerBase
 
     // DELETE /api/products/{id}
     [HttpDelete("{id:guid}")]
+    [Authorize(Roles = "RegAffairsOfficer")]
     public async Task<IActionResult> Delete(Guid id)
     {
         var product = await _context.Products.FindAsync(id);
