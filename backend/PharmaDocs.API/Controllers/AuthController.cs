@@ -8,6 +8,7 @@ namespace PharmaDocs.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Produces("application/json")]
 public class AuthController : ControllerBase
 {
     private readonly PharmaDocsDbContext _context;
@@ -19,8 +20,10 @@ public class AuthController : ControllerBase
         _tokenService = tokenService;
     }
 
-    // POST /api/auth/login
+    /// <summary>Authenticate a user and return a JWT token.</summary>
     [HttpPost("login")]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
         var user = await _context.Users

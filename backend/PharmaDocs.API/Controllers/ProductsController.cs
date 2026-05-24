@@ -10,6 +10,7 @@ namespace PharmaDocs.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
+[Produces("application/json")]
 public class ProductsController : ControllerBase
 {
     private readonly PharmaDocsDbContext _context;
@@ -18,9 +19,10 @@ public class ProductsController : ControllerBase
     {
         _context = context;
     }
-
-    // GET /api/products
+    /// <summary>Get all products. Requires authentication.</summary>
     [HttpGet]
+    [ProducesResponseType(typeof(IEnumerable<Product>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetAll()
     {
         var products = await _context.Products
@@ -29,9 +31,11 @@ public class ProductsController : ControllerBase
         return Ok(products);
     }
 
-    // GET /api/products/{id}
+    /// <summary>Get a single product by ID. Requires authentication.</summary>
     [HttpGet("{id:guid}")]
-    [Authorize]
+    [ProducesResponseType(typeof(Product), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id)
     {
         var product = await _context.Products.FindAsync(id);
@@ -39,9 +43,12 @@ public class ProductsController : ControllerBase
         return Ok(product);
     }
 
-    // POST /api/products
+    /// <summary>Create a new product. Requires RegAffairsOfficer role.</summary>
     [HttpPost]
     [Authorize(Roles = "RegAffairsOfficer")]
+    [ProducesResponseType(typeof(Product), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Create([FromBody] CreateProductDto dto)
     {
         var product = new Product
@@ -65,9 +72,13 @@ public class ProductsController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = product.Id }, product);
     }
 
-    // PUT /api/products/{id}
+    /// <summary>Update an existing product. Requires RegAffairsOfficer role.</summary>
     [HttpPut("{id:guid}")]
     [Authorize(Roles = "RegAffairsOfficer")]
+    [ProducesResponseType(typeof(Product), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateProductDto dto)
     {
         var product = await _context.Products.FindAsync(id);
@@ -86,9 +97,13 @@ public class ProductsController : ControllerBase
         return Ok(product);
     }
 
-    // DELETE /api/products/{id}
+    /// <summary>Delete a product. Requires RegAffairsOfficer role.</summary>
     [HttpDelete("{id:guid}")]
     [Authorize(Roles = "RegAffairsOfficer")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id)
     {
         var product = await _context.Products.FindAsync(id);
