@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PharmaDocs.Domain.Entities;
 using PharmaDocs.Domain.Enums;
-using BCrypt.Net;
 
 namespace PharmaDocs.Infrastructure.Data;
 
@@ -16,6 +15,7 @@ public class PharmaDocsDbContext : DbContext
     public DbSet<SubmissionPackage> SubmissionPackages => Set<SubmissionPackage>();
     public DbSet<SubmissionDocument> SubmissionDocuments => Set<SubmissionDocument>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    private const string SeedPasswordHash = "$2a$11$gC76SgMbnnNGOHdy6WKR/uaAL2ZkBonnlNbdr5M/bLYCb8C1NTGBu";
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -57,7 +57,7 @@ public class PharmaDocsDbContext : DbContext
                 Id = user1Id,
                 FullName = "Sarah Leblanc",
                 Email = "sarah@pharmadocs.ca",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Demo1234!"),
+                PasswordHash = SeedPasswordHash,
                 Role = UserRole.RegAffairsOfficer,
                 CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
             },
@@ -66,7 +66,7 @@ public class PharmaDocsDbContext : DbContext
                 Id = user2Id,
                 FullName = "James Okafor",
                 Email = "james@pharmadocs.ca",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Demo1234!"),
+                PasswordHash = SeedPasswordHash,
                 Role = UserRole.Viewer,
                 CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
             }
@@ -103,6 +103,38 @@ public class PharmaDocsDbContext : DbContext
                 TherapeuticCategory = "Antidiabetic",
                 CreatedById = user1Id,
                 CreatedAt = new DateTime(2026, 1, 15, 0, 0, 0, DateTimeKind.Utc)
+            }
+        );
+
+        var doc1Id = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
+        var doc2Id = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
+
+        modelBuilder.Entity<DocumentRecord>().HasData(
+            new DocumentRecord
+            {
+                Id = doc1Id,
+                Title = "Atorvastatin Product Monograph v1.0",
+                Type = DocumentType.ProductMonograph,
+                Status = DocumentStatus.Final,
+                Version = "1.0",
+                Date = new DateOnly(2026, 1, 20),
+                Notes = "Initial approved monograph",
+                ProductId = product1Id,
+                CreatedById = user1Id,
+                CreatedAt = new DateTime(2026, 1, 20, 0, 0, 0, DateTimeKind.Utc)
+            },
+            new DocumentRecord
+            {
+                Id = doc2Id,
+                Title = "Metformin Label Draft",
+                Type = DocumentType.Label,
+                Status = DocumentStatus.Draft,
+                Version = "1.0",
+                Date = new DateOnly(2026, 2, 1),
+                Notes = null,
+                ProductId = product2Id,
+                CreatedById = user1Id,
+                CreatedAt = new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc)
             }
         );
     }
