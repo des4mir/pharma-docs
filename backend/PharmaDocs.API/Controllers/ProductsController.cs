@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using PharmaDocs.Domain.Entities;
 using PharmaDocs.Infrastructure.Data;
 using PharmaDocs.Application.DTOs;
+using System.Security.Claims;
 
 namespace PharmaDocs.API.Controllers;
 
@@ -62,7 +63,7 @@ public class ProductsController : ControllerBase
             DosageForm = dto.DosageForm,
             RouteOfAdministration = dto.RouteOfAdministration,
             TherapeuticCategory = dto.TherapeuticCategory,
-            CreatedById = dto.CreatedById,
+            CreatedById = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!),
             CreatedAt = DateTime.UtcNow
         };
 

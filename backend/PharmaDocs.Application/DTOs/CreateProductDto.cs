@@ -10,5 +10,4 @@ public class CreateProductDto
     public string DosageForm { get; set; } = string.Empty;
     public string RouteOfAdministration { get; set; } = string.Empty;
     public string TherapeuticCategory { get; set; } = string.Empty;
-    public Guid CreatedById { get; set; }
 }

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using PharmaDocs.Domain.Entities;
 using PharmaDocs.Infrastructure.Data;
 using PharmaDocs.Application.DTOs;
+using System.Security.Claims;
 
 namespace PharmaDocs.API.Controllers;
 
@@ -74,7 +75,7 @@ public class DocumentsController : ControllerBase
             Date = dto.Date,
             Notes = dto.Notes,
             ProductId = dto.ProductId,
-            CreatedById = dto.CreatedById,
+            CreatedById = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!),
             CreatedAt = DateTime.UtcNow
         };
 

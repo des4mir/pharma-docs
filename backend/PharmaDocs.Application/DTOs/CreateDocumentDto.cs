@@ -10,5 +10,4 @@ public class CreateDocumentDto
     public DateOnly Date { get; set; }
     public string? Notes { get; set; }
     public Guid ProductId { get; set; }
-    public Guid CreatedById { get; set; }
 }
