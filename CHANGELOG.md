@@ -10,11 +10,69 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Planned
 
 - `SubmissionPackagesController` CRUD
-- `DocumentRecordsController` CRUD
+- Status workflow validation
+- Audit log writing on status changes
 
 ---
 
-## [0.4.0] - 2026-05-18
+## [0.7.0] - 2026-05-28
+
+### Fixed
+
+- `createdById` now resolved from JWT claims (`ClaimTypes.NameIdentifier`) instead of request body
+- Removed `CreatedById` from `CreateProductDto` and `CreateDocumentDto` — client can no longer spoof creator identity
+
+### Added
+
+- `backend/docs/` folder with developer testing resources:
+  - `API-TESTING-GUIDE.md` — endpoint reference, seeded data, expected results
+  - `test-api.ps1` — automated PowerShell script covering all 9 test scenarios
+  - `curl-commands.txt` — manual curl reference for both roles
+
+---
+
+## [0.6.0] - 2026-05-27
+
+### Added
+
+- `DocumentsController` with full CRUD: `GET`, `GET /{id}`, `GET /by-product/{productId}`, `POST`, `PUT /{id}`, `DELETE /{id}`
+- `DocumentResponseDto`, `CreateDocumentDto`, `UpdateDocumentDto` in Application layer
+- `POST/PUT/DELETE` restricted to `RegAffairsOfficer` role; `GET` open to both roles
+- `Label` added to `DocumentType` enum
+- `DocumentType` and `DocumentStatus` enums serialize as strings in responses
+- Seed data: 2 `DocumentRecord` rows for local testing
+
+---
+
+## [0.5.0] - 2026-05-25
+
+### Added
+
+- `ProductResponseDto` — clean API response contract, no EF navigation properties exposed
+- Private `ToDto()` helper on `ProductsController` for consistent entity-to-DTO mapping
+- Swagger schemas now reflect DTOs only
+
+---
+
+## [0.4.1] - 2026-05-24
+
+### Added
+
+- Swagger XML comments and `ProducesResponseType` annotations on all `ProductsController` endpoints
+
+---
+
+## [0.4.0] - 2026-05-20
+
+### Added
+
+- `[Authorize]` at controller level on `ProductsController`
+- `[Authorize(Roles = "RegAffairsOfficer")]` on `POST`, `PUT`, `DELETE` endpoints
+- Swagger Bearer authentication UI configured
+
+---
+
+## [0.3.0] - 2026-05-18
 
 ### Added
 
@@ -27,7 +85,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [0.3.0] - 2026-05-16
+## [0.2.0] - 2026-05-16
 
 ### Added
 
@@ -35,20 +93,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `CreateProductDto` in Application layer — clean POST contract (no entity graph exposure)
 - `UpdateProductDto` in Application layer — clean PUT contract
 - JSON enum serialization configured — enums serialize as strings (e.g. `"Draft"`, `"NDS"`)
-
----
-
-## [0.2.0] - 2026-05-16
-
-### Added
-
 - EF Core configured in `Program.cs` with Npgsql provider
 - `PharmaDocsDbContext` registered with PostgreSQL connection string
 - EF Core migrations generated and applied — all 6 tables created in `pharmadocs_db`
 - Seed data: 2 users (Sarah Leblanc — RegAffairsOfficer, James Okafor — Viewer)
 - Seed data: 2 products (Atorvastatin 20mg — Apotex Inc., Metformin 500mg — Teva Canada)
 - `Microsoft.EntityFrameworkCore.Design` added to API project for `dotnet ef` CLI support
-- `AddControllers()` and `MapControllers()` configured
 - Swagger/OpenAPI confirmed working at `http://localhost:5046/swagger`
 
 ### Changed
