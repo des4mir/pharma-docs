@@ -15,6 +15,23 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.7.1] - 2026-06-01
+
+### Changed
+
+- Updated architecture documentation to describe the four-layer Clean Architecture flow.
+- Corrected README setup notes to match the real development port and local appsettings filename.
+- Aligned API testing docs with the current seeded document type and endpoint behavior.
+- Replaced stale `Label` references in seeded-data documentation with `CertificateOfAnalysis`.
+
+### Fixed
+
+- Clarified that the default local API endpoint is `http://localhost:5046`.
+- Fixed documentation drift between seeded data, PowerShell tests, and curl examples.
+- Updated document seed references to match the current domain enum set.
+
+---
+
 ## [0.7.0] - 2026-05-28
 
 ### Fixed

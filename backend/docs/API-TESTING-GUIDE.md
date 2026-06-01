@@ -22,7 +22,7 @@ The database contains two test users with the same password hash:
 
 ```powershell
 # Navigate to backend directory
-cd d:\OneDrive\code\pharma-docs\backend
+cd path/to/pharma-docs/backend
 
 # Run the PowerShell test script
 .\test-api.ps1

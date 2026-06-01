@@ -89,7 +89,7 @@ dotnet run --project PharmaDocs.API
 
 API runs at `http://localhost:5046` (or the port shown in your terminal on startup)
 
-Swagger UI at `https://localhost:5046/swagger`
+Swagger UI at `http://localhost:5046/swagger`
 
 ### Frontend
 
