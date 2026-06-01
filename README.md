@@ -81,14 +81,15 @@ pharma-docs/
 
 ```bash
 cd backend
-cp PharmaDocs.API/appsettings.example.json PharmaDocs.API/appsettings.json
+cp PharmaDocs.API/appsettings.Development.json PharmaDocs.API/appsettings.json
 # Fill in your PostgreSQL connection string and JWT secret
 dotnet ef database update --project PharmaDocs.Infrastructure --startup-project PharmaDocs.API
 dotnet run --project PharmaDocs.API
 ```
 
-API runs at `https://localhost:5001`  
-Swagger UI at `https://localhost:5001/swagger`
+API runs at `http://localhost:5046` (or the port shown in your terminal on startup)
+
+Swagger UI at `https://localhost:5046/swagger`
 
 ### Frontend
 
