@@ -130,4 +130,4 @@ curl -X GET http://localhost:5046/api/products | jq .
 #
 # Documents:
 #   Atorvastatin Monograph: cccccccc-cccc-cccc-cccc-cccccccccccc
-#   Metformin Label: dddddddd-dddd-dddd-dddd-dddddddddddd
+#   Metformin Certificate of Analysis v1.0: dddddddd-dddd-dddd-dddd-dddddddddddd

@@ -145,10 +145,10 @@ Visit: http://localhost:5046/swagger
    - Status: Final
    - Type: ProductMonograph
 
-2. **Metformin Label Draft**
+2. **Metformin Certificate of Analysis v1.0**
    - ID: `dddddddd-dddd-dddd-dddd-dddddddddddd`
    - Status: Draft
-   - Type: Label
+   - Type: CertificateOfAnalysis
 
 ## Expected Test Results
 
