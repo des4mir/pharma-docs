@@ -128,8 +128,8 @@ namespace PharmaDocs.Infrastructure.Migrations
                             Date = new DateOnly(2026, 2, 1),
                             ProductId = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
                             Status = "Draft",
-                            Title = "Metformin Label Draft",
-                            Type = "Label",
+                            Title = "Metformin Certificate of Analysis v1.0",
+                            Type = "CertificateOfAnalysis",
                             Version = "1.0"
                         });
                 });

@@ -12,8 +12,8 @@ using PharmaDocs.Infrastructure.Data;
 namespace PharmaDocs.Infrastructure.Migrations
 {
     [DbContext(typeof(PharmaDocsDbContext))]
-    [Migration("20260526183829_SeedDocumentsAndFixPasswordHash")]
-    partial class SeedDocumentsAndFixPasswordHash
+    [Migration("20260601191635_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -131,8 +131,8 @@ namespace PharmaDocs.Infrastructure.Migrations
                             Date = new DateOnly(2026, 2, 1),
                             ProductId = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
                             Status = "Draft",
-                            Title = "Metformin Label Draft",
-                            Type = "Label",
+                            Title = "Metformin Certificate of Analysis v1.0",
+                            Type = "CertificateOfAnalysis",
                             Version = "1.0"
                         });
                 });

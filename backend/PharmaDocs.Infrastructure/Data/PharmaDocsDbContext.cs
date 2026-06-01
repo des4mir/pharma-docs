@@ -126,8 +126,8 @@ public class PharmaDocsDbContext : DbContext
             new DocumentRecord
             {
                 Id = doc2Id,
-                Title = "Metformin Label Draft",
-                Type = DocumentType.Label,
+                Title = "Metformin Certificate of Analysis v1.0",
+                Type = DocumentType.CertificateOfAnalysis,
                 Status = DocumentStatus.Draft,
                 Version = "1.0",
                 Date = new DateOnly(2026, 2, 1),

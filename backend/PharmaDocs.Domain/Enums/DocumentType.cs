@@ -11,6 +11,5 @@ public enum DocumentType
     ClinicalStudyReport,
     NonClinicalStudyReport,
     QualitySummary,
-    Label,
     ImportClearance
 }

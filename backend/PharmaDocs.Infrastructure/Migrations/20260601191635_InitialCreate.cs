@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
+#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
+
 namespace PharmaDocs.Infrastructure.Migrations
 {
     /// <inheritdoc />
@@ -170,6 +172,33 @@ namespace PharmaDocs.Infrastructure.Migrations
                         principalTable: "SubmissionPackages",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.InsertData(
+                table: "Users",
+                columns: new[] { "Id", "CreatedAt", "Email", "FullName", "PasswordHash", "Role" },
+                values: new object[,]
+                {
+                    { new Guid("11111111-1111-1111-1111-111111111111"), new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), "sarah@pharmadocs.ca", "Sarah Leblanc", "$2a$11$gC76SgMbnnNGOHdy6WKR/uaAL2ZkBonnlNbdr5M/bLYCb8C1NTGBu", "RegAffairsOfficer" },
+                    { new Guid("22222222-2222-2222-2222-222222222222"), new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), "james@pharmadocs.ca", "James Okafor", "$2a$11$gC76SgMbnnNGOHdy6WKR/uaAL2ZkBonnlNbdr5M/bLYCb8C1NTGBu", "Viewer" }
+                });
+
+            migrationBuilder.InsertData(
+                table: "Products",
+                columns: new[] { "Id", "CreatedAt", "CreatedById", "DIN", "DosageForm", "Manufacturer", "MedicinalIngredient", "NPN", "Name", "RouteOfAdministration", "TherapeuticCategory" },
+                values: new object[,]
+                {
+                    { new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), new DateTime(2026, 1, 15, 0, 0, 0, 0, DateTimeKind.Utc), new Guid("11111111-1111-1111-1111-111111111111"), "02245276", "Tablet", "Apotex Inc.", "Atorvastatin Calcium", null, "Atorvastatin 20mg Tablet", "Oral", "Cardiovascular" },
+                    { new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"), new DateTime(2026, 1, 15, 0, 0, 0, 0, DateTimeKind.Utc), new Guid("11111111-1111-1111-1111-111111111111"), "02162512", "Tablet", "Teva Canada", "Metformin Hydrochloride", null, "Metformin 500mg Tablet", "Oral", "Antidiabetic" }
+                });
+
+            migrationBuilder.InsertData(
+                table: "DocumentRecords",
+                columns: new[] { "Id", "CreatedAt", "CreatedById", "Date", "Notes", "ProductId", "Status", "Title", "Type", "Version" },
+                values: new object[,]
+                {
+                    { new Guid("cccccccc-cccc-cccc-cccc-cccccccccccc"), new DateTime(2026, 1, 20, 0, 0, 0, 0, DateTimeKind.Utc), new Guid("11111111-1111-1111-1111-111111111111"), new DateOnly(2026, 1, 20), "Initial approved monograph", new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), "Final", "Atorvastatin Product Monograph v1.0", "ProductMonograph", "1.0" },
+                    { new Guid("dddddddd-dddd-dddd-dddd-dddddddddddd"), new DateTime(2026, 2, 1, 0, 0, 0, 0, DateTimeKind.Utc), new Guid("11111111-1111-1111-1111-111111111111"), new DateOnly(2026, 2, 1), null, new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"), "Draft", "Metformin Certificate of Analysis v1.0", "CertificateOfAnalysis", "1.0" }
                 });
 
             migrationBuilder.CreateIndex(
