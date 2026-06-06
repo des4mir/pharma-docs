@@ -9,9 +9,47 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Planned
 
-- `SubmissionPackagesController` CRUD
-- Status workflow validation
-- Audit log writing on status changes
+- Enforce submission status transition validation rules
+- Add global exception middleware
+- Add input validation on DTOs
+- Complete Swagger annotations for remaining endpoints
+- Build the Next.js frontend (auth, dashboard, products, submission board, audit log)
+- Add Docker/docker-compose and deployment setup for Railway and Vercel
+
+---
+
+## [0.8.0] - 2026-06-06
+
+### Added
+
+- `SubmissionPackagesController` with full CRUD and workflow support:
+  - `GET /api/submissionpackages` — list all active packages
+  - `GET /api/submissionpackages/{id}` — retrieve single package
+  - `GET /api/submissionpackages/by-product/{productId}` — filter by product
+  - `GET /api/submissionpackages/{id}/auditlog` — retrieve full audit history
+  - `POST /api/submissionpackages` — create new package (RegAffairsOfficer only)
+  - `PUT /api/submissionpackages/{id}` — update package details (RegAffairsOfficer only)
+  - `PATCH /api/submissionpackages/{id}/status` — update status with audit logging (RegAffairsOfficer only)
+  - `PATCH /api/submissionpackages/{id}/archive` — soft-delete package (blocked if Submitted/UnderReview - RegAffairsOfficer only)
+- `CreateSubmissionPackageDto`, `UpdateSubmissionPackageDto`, `UpdateSubmissionStatusDto`, `SubmissionPackageResponseDto`, and `AuditLogResponseDto` in the Application layer
+- Archive endpoints (`PATCH /{id}/archive`) on all three resource controllers (Products, Documents, Submission Packages) with soft delete and audit trail support
+- Audit log expansion:
+  - `Action` field captures operation type (`Created`, `Updated`, `Archived`, `StatusChanged`)
+  - `OldValues` and `NewValues` capture entity snapshots before and after changes
+  - `OldStatus` and `NewStatus` track status transitions with `SubmissionPackageId` linkage
+  - `ChangedByName` preserves actor identity for historical accountability
+- Seed data: 1 `SubmissionPackage` (NDS package for Atorvastatin)
+
+### Changed
+
+- `DELETE` operations on resources replaced with `PATCH /{id}/archive` for soft delete
+- All write operations (`POST`, `PUT`, `PATCH`) now require the `RegAffairsOfficer` role
+- Archive operations return `204 No Content` instead of an entity response
+- Audit logging now captures detailed snapshots and actor information
+
+### Fixed
+
+- `PharmaDocsDbContext` comments now explain composite keys, enum conversions, delete behaviors, and seed data consistency
 
 ---
 
