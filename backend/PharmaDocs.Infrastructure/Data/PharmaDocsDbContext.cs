@@ -9,23 +9,27 @@ public class PharmaDocsDbContext : DbContext
     public PharmaDocsDbContext(DbContextOptions<PharmaDocsDbContext> options)
         : base(options) { }
 
+    // DbSets using property expressions instead of direct Set<T> declarations to enable lazy initialization
     public DbSet<User> Users => Set<User>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<DocumentRecord> DocumentRecords => Set<DocumentRecord>();
     public DbSet<SubmissionPackage> SubmissionPackages => Set<SubmissionPackage>();
     public DbSet<SubmissionDocument> SubmissionDocuments => Set<SubmissionDocument>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+
+    // Bcrypt hash for seed users; password is "TestPassword123!" hashed with bcrypt (11 rounds)
     private const string SeedPasswordHash = "$2a$11$gC76SgMbnnNGOHdy6WKR/uaAL2ZkBonnlNbdr5M/bLYCb8C1NTGBu";
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        // Composite key for join table
+        // SubmissionDocument is a join table; uses composite key of both foreign keys
         modelBuilder.Entity<SubmissionDocument>()
             .HasKey(sd => new { sd.SubmissionPackageId, sd.DocumentRecordId });
 
-        // Enums stored as strings
+        // Store enum values as strings in database for readability and easier migrations
+        // This allows viewing raw database values without needing type conversion
         modelBuilder.Entity<User>()
             .Property(u => u.Role)
             .HasConversion<string>();
@@ -46,8 +50,64 @@ public class PharmaDocsDbContext : DbContext
             .Property(s => s.Status)
             .HasConversion<string>();
 
-        // --- SEED DATA ---
+        // Foreign key relationships with Restrict delete behavior to prevent accidental deletion of referenced records
+        // CreatedBy/ArchivedBy references use WithMany() because one user can create/archive many records
+        // Product
+        modelBuilder.Entity<Product>()
+            .HasOne(p => p.CreatedBy)
+            .WithMany()
+            .HasForeignKey(p => p.CreatedById)
+            .OnDelete(DeleteBehavior.Restrict);
 
+        modelBuilder.Entity<Product>()
+            .HasOne(p => p.ArchivedBy)
+            .WithMany()
+            .HasForeignKey(p => p.ArchivedById)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // DocumentRecord
+        modelBuilder.Entity<DocumentRecord>()
+            .HasOne(d => d.CreatedBy)
+            .WithMany()
+            .HasForeignKey(d => d.CreatedById)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<DocumentRecord>()
+            .HasOne(d => d.ArchivedBy)
+            .WithMany()
+            .HasForeignKey(d => d.ArchivedById)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // SubmissionPackage
+        modelBuilder.Entity<SubmissionPackage>()
+            .HasOne(s => s.CreatedBy)
+            .WithMany()
+            .HasForeignKey(s => s.CreatedById)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<SubmissionPackage>()
+            .HasOne(s => s.ArchivedBy)
+            .WithMany()
+            .HasForeignKey(s => s.ArchivedById)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // AuditLog
+        modelBuilder.Entity<AuditLog>()
+            .HasOne(a => a.ChangedBy)
+            .WithMany()
+            .HasForeignKey(a => a.ChangedById)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<AuditLog>()
+            .HasOne(a => a.SubmissionPackage)
+            .WithMany(s => s.AuditLogs)
+            .HasForeignKey(a => a.SubmissionPackageId)
+            .IsRequired(false)
+            // SetNull allows audit logs to persist even if submission package is deleted, maintaining audit trail history
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // --- SEED DATA ---
+        // Fixed GUIDs used for seed data to ensure consistent IDs across database resets
         var user1Id = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var user2Id = Guid.Parse("22222222-2222-2222-2222-222222222222");
 
@@ -135,6 +195,22 @@ public class PharmaDocsDbContext : DbContext
                 ProductId = product2Id,
                 CreatedById = user1Id,
                 CreatedAt = new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc)
+            }
+        );
+
+        var pkg1Id = Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
+
+        modelBuilder.Entity<SubmissionPackage>().HasData(
+            new SubmissionPackage
+            {
+                Id = pkg1Id,
+                SubmissionType = SubmissionType.NDS,
+                RegulatoryBody = "Health Canada",
+                Status = SubmissionStatus.Draft,
+                ProductId = product1Id,
+                CreatedById = user1Id,
+                TargetDate = new DateOnly(2026, 6, 30),
+                CreatedAt = new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc)
             }
         );
     }

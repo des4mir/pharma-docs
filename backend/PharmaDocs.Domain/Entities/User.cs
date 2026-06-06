@@ -10,6 +10,7 @@ public class User
     public string FullName { get; set; } = string.Empty;
     public UserRole Role { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public bool IsActive { get; set; } = true;
 
     // Navigation properties
     public ICollection<Product> Products { get; set; } = new List<Product>();

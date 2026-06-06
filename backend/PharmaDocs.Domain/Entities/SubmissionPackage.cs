@@ -11,6 +11,10 @@ public class SubmissionPackage
     public DateOnly? TargetDate { get; set; }
     public DateOnly? SubmissionDate { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public bool IsArchived { get; set; } = false;
+    public DateTime? ArchivedAt { get; set; }
+    public Guid? ArchivedById { get; set; }
+    public User? ArchivedBy { get; set; }
 
     // Foreign keys
     public Guid ProductId { get; set; }

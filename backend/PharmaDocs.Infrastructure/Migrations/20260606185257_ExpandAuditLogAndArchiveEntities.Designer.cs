@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PharmaDocs.Infrastructure.Data;
@@ -11,9 +12,11 @@ using PharmaDocs.Infrastructure.Data;
 namespace PharmaDocs.Infrastructure.Migrations
 {
     [DbContext(typeof(PharmaDocsDbContext))]
-    partial class PharmaDocsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260606185257_ExpandAuditLogAndArchiveEntities")]
+    partial class ExpandAuditLogAndArchiveEntities
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

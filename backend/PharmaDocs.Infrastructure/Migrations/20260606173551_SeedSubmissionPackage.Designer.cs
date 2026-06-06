@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PharmaDocs.Infrastructure.Data;
@@ -11,9 +12,11 @@ using PharmaDocs.Infrastructure.Data;
 namespace PharmaDocs.Infrastructure.Migrations
 {
     [DbContext(typeof(PharmaDocsDbContext))]
-    partial class PharmaDocsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260606173551_SeedSubmissionPackage")]
+    partial class SeedSubmissionPackage
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -28,10 +31,6 @@ namespace PharmaDocs.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<Guid>("ChangedById")
                         .HasColumnType("uuid");
 
@@ -39,18 +38,8 @@ namespace PharmaDocs.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid>("EntityId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("EntityType")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<string>("NewStatus")
                         .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("NewValues")
                         .HasColumnType("text");
 
                     b.Property<string>("Notes")
@@ -60,25 +49,17 @@ namespace PharmaDocs.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("OldValues")
-                        .HasColumnType("text");
-
-                    b.Property<Guid?>("SubmissionPackageId")
+                    b.Property<Guid>("SubmissionPackageId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
                     b.HasIndex("ChangedById");
 
                     b.HasIndex("SubmissionPackageId");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("AuditLogs");
                 });
@@ -89,12 +70,6 @@ namespace PharmaDocs.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("ArchivedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("ArchivedById")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -103,9 +78,6 @@ namespace PharmaDocs.Infrastructure.Migrations
 
                     b.Property<DateOnly>("Date")
                         .HasColumnType("date");
-
-                    b.Property<bool>("IsArchived")
-                        .HasColumnType("boolean");
 
                     b.Property<string>("Notes")
                         .HasColumnType("text");
@@ -125,22 +97,15 @@ namespace PharmaDocs.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("Version")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ArchivedById");
-
                     b.HasIndex("CreatedById");
 
                     b.HasIndex("ProductId");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("DocumentRecords");
 
@@ -151,7 +116,6 @@ namespace PharmaDocs.Infrastructure.Migrations
                             CreatedAt = new DateTime(2026, 1, 20, 0, 0, 0, 0, DateTimeKind.Utc),
                             CreatedById = new Guid("11111111-1111-1111-1111-111111111111"),
                             Date = new DateOnly(2026, 1, 20),
-                            IsArchived = false,
                             Notes = "Initial approved monograph",
                             ProductId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
                             Status = "Final",
@@ -165,7 +129,6 @@ namespace PharmaDocs.Infrastructure.Migrations
                             CreatedAt = new DateTime(2026, 2, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             CreatedById = new Guid("11111111-1111-1111-1111-111111111111"),
                             Date = new DateOnly(2026, 2, 1),
-                            IsArchived = false,
                             ProductId = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
                             Status = "Draft",
                             Title = "Metformin Certificate of Analysis v1.0",
@@ -180,12 +143,6 @@ namespace PharmaDocs.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("ArchivedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("ArchivedById")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -198,9 +155,6 @@ namespace PharmaDocs.Infrastructure.Migrations
                     b.Property<string>("DosageForm")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<bool>("IsArchived")
-                        .HasColumnType("boolean");
 
                     b.Property<string>("Manufacturer")
                         .IsRequired()
@@ -225,16 +179,9 @@ namespace PharmaDocs.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uuid");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("ArchivedById");
-
                     b.HasIndex("CreatedById");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("Products");
 
@@ -246,7 +193,6 @@ namespace PharmaDocs.Infrastructure.Migrations
                             CreatedById = new Guid("11111111-1111-1111-1111-111111111111"),
                             DIN = "02245276",
                             DosageForm = "Tablet",
-                            IsArchived = false,
                             Manufacturer = "Apotex Inc.",
                             MedicinalIngredient = "Atorvastatin Calcium",
                             Name = "Atorvastatin 20mg Tablet",
@@ -260,7 +206,6 @@ namespace PharmaDocs.Infrastructure.Migrations
                             CreatedById = new Guid("11111111-1111-1111-1111-111111111111"),
                             DIN = "02162512",
                             DosageForm = "Tablet",
-                            IsArchived = false,
                             Manufacturer = "Teva Canada",
                             MedicinalIngredient = "Metformin Hydrochloride",
                             Name = "Metformin 500mg Tablet",
@@ -293,20 +238,11 @@ namespace PharmaDocs.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("ArchivedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("ArchivedById")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("CreatedById")
                         .HasColumnType("uuid");
-
-                    b.Property<bool>("IsArchived")
-                        .HasColumnType("boolean");
 
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uuid");
@@ -329,18 +265,11 @@ namespace PharmaDocs.Infrastructure.Migrations
                     b.Property<DateOnly?>("TargetDate")
                         .HasColumnType("date");
 
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uuid");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("ArchivedById");
 
                     b.HasIndex("CreatedById");
 
                     b.HasIndex("ProductId");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("SubmissionPackages");
 
@@ -350,7 +279,6 @@ namespace PharmaDocs.Infrastructure.Migrations
                             Id = new Guid("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"),
                             CreatedAt = new DateTime(2026, 3, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             CreatedById = new Guid("11111111-1111-1111-1111-111111111111"),
-                            IsArchived = false,
                             ProductId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
                             RegulatoryBody = "Health Canada",
                             Status = "Draft",
@@ -376,9 +304,6 @@ namespace PharmaDocs.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("text");
@@ -398,7 +323,6 @@ namespace PharmaDocs.Infrastructure.Migrations
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Email = "sarah@pharmadocs.ca",
                             FullName = "Sarah Leblanc",
-                            IsActive = true,
                             PasswordHash = "$2a$11$gC76SgMbnnNGOHdy6WKR/uaAL2ZkBonnlNbdr5M/bLYCb8C1NTGBu",
                             Role = "RegAffairsOfficer"
                         },
@@ -408,7 +332,6 @@ namespace PharmaDocs.Infrastructure.Migrations
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Email = "james@pharmadocs.ca",
                             FullName = "James Okafor",
-                            IsActive = true,
                             PasswordHash = "$2a$11$gC76SgMbnnNGOHdy6WKR/uaAL2ZkBonnlNbdr5M/bLYCb8C1NTGBu",
                             Role = "Viewer"
                         });
@@ -417,19 +340,16 @@ namespace PharmaDocs.Infrastructure.Migrations
             modelBuilder.Entity("PharmaDocs.Domain.Entities.AuditLog", b =>
                 {
                     b.HasOne("PharmaDocs.Domain.Entities.User", "ChangedBy")
-                        .WithMany()
+                        .WithMany("AuditLogs")
                         .HasForeignKey("ChangedById")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("PharmaDocs.Domain.Entities.SubmissionPackage", "SubmissionPackage")
                         .WithMany("AuditLogs")
                         .HasForeignKey("SubmissionPackageId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("PharmaDocs.Domain.Entities.User", null)
-                        .WithMany("AuditLogs")
-                        .HasForeignKey("UserId");
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("ChangedBy");
 
@@ -438,15 +358,10 @@ namespace PharmaDocs.Infrastructure.Migrations
 
             modelBuilder.Entity("PharmaDocs.Domain.Entities.DocumentRecord", b =>
                 {
-                    b.HasOne("PharmaDocs.Domain.Entities.User", "ArchivedBy")
-                        .WithMany()
-                        .HasForeignKey("ArchivedById")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("PharmaDocs.Domain.Entities.User", "CreatedBy")
-                        .WithMany()
+                        .WithMany("DocumentRecords")
                         .HasForeignKey("CreatedById")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("PharmaDocs.Domain.Entities.Product", "Product")
@@ -455,12 +370,6 @@ namespace PharmaDocs.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("PharmaDocs.Domain.Entities.User", null)
-                        .WithMany("DocumentRecords")
-                        .HasForeignKey("UserId");
-
-                    b.Navigation("ArchivedBy");
-
                     b.Navigation("CreatedBy");
 
                     b.Navigation("Product");
@@ -468,22 +377,11 @@ namespace PharmaDocs.Infrastructure.Migrations
 
             modelBuilder.Entity("PharmaDocs.Domain.Entities.Product", b =>
                 {
-                    b.HasOne("PharmaDocs.Domain.Entities.User", "ArchivedBy")
-                        .WithMany()
-                        .HasForeignKey("ArchivedById")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("PharmaDocs.Domain.Entities.User", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("PharmaDocs.Domain.Entities.User", null)
                         .WithMany("Products")
-                        .HasForeignKey("UserId");
-
-                    b.Navigation("ArchivedBy");
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("CreatedBy");
                 });
@@ -509,15 +407,10 @@ namespace PharmaDocs.Infrastructure.Migrations
 
             modelBuilder.Entity("PharmaDocs.Domain.Entities.SubmissionPackage", b =>
                 {
-                    b.HasOne("PharmaDocs.Domain.Entities.User", "ArchivedBy")
-                        .WithMany()
-                        .HasForeignKey("ArchivedById")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("PharmaDocs.Domain.Entities.User", "CreatedBy")
-                        .WithMany()
+                        .WithMany("SubmissionPackages")
                         .HasForeignKey("CreatedById")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("PharmaDocs.Domain.Entities.Product", "Product")
@@ -525,12 +418,6 @@ namespace PharmaDocs.Infrastructure.Migrations
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("PharmaDocs.Domain.Entities.User", null)
-                        .WithMany("SubmissionPackages")
-                        .HasForeignKey("UserId");
-
-                    b.Navigation("ArchivedBy");
 
                     b.Navigation("CreatedBy");
 

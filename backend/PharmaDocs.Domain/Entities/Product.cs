@@ -12,6 +12,10 @@ public class Product
     public string RouteOfAdministration { get; set; } = string.Empty;
     public string TherapeuticCategory { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public bool IsArchived { get; set; } = false;
+    public DateTime? ArchivedAt { get; set; }
+    public Guid? ArchivedById { get; set; }
+    public User? ArchivedBy { get; set; }
 
     // Foreign keys
     public Guid CreatedById { get; set; }
