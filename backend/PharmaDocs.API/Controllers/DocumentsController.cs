@@ -28,6 +28,7 @@ public class DocumentsController : ControllerBase
     public async Task<IActionResult> GetAll()
     {
         var docs = await _context.DocumentRecords
+            .Include(d => d.CreatedBy)
             .Where(d => !d.IsArchived)
             .OrderBy(d => d.Title)
             .ToListAsync();
@@ -41,6 +42,7 @@ public class DocumentsController : ControllerBase
     public async Task<IActionResult> GetByProduct(Guid productId)
     {
         var docs = await _context.DocumentRecords
+            .Include(d => d.CreatedBy)
             .Where(d => d.ProductId == productId && !d.IsArchived)
             .OrderBy(d => d.Title)
             .ToListAsync();
@@ -54,8 +56,10 @@ public class DocumentsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id)
     {
-        var doc = await _context.DocumentRecords.FindAsync(id);
-        if (doc is null || doc.IsArchived) return NotFound();
+        var doc = await _context.DocumentRecords
+            .Include(d => d.CreatedBy)
+            .FirstOrDefaultAsync(d => d.Id == id && !d.IsArchived);
+        if (doc is null) return NotFound();
         return Ok(ToDto(doc));
     }
 
@@ -75,6 +79,7 @@ public class DocumentsController : ControllerBase
             Id = Guid.NewGuid(),
             Title = dto.Title,
             Type = dto.Type,
+            Status = dto.Status,
             Version = dto.Version,
             Date = dto.Date,
             Notes = dto.Notes,
@@ -91,13 +96,15 @@ public class DocumentsController : ControllerBase
             EntityType = "DocumentRecord",
             EntityId = doc.Id,
             Action = "Created",
-            NewValues = $"{{\"Title\":\"{doc.Title}\",\"Type\":\"{doc.Type}\"}}",
+            NewValues = $"{{\"Title\":\"{doc.Title}\",\"Type\":\"{doc.Type}\",\"Status\":\"{doc.Status}\"}}",
             ChangedById = actorId,
             ChangedByName = actorName,
             Timestamp = DateTime.UtcNow
         });
 
         await _context.SaveChangesAsync();
+        await _context.Entry(doc).Reference(d => d.CreatedBy).LoadAsync();
+
         return CreatedAtAction(nameof(GetById), new { id = doc.Id }, ToDto(doc));
     }
 
@@ -110,8 +117,10 @@ public class DocumentsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateDocumentDto dto)
     {
-        var doc = await _context.DocumentRecords.FindAsync(id);
-        if (doc is null || doc.IsArchived) return NotFound();
+        var doc = await _context.DocumentRecords
+            .Include(d => d.CreatedBy)
+            .FirstOrDefaultAsync(d => d.Id == id && !d.IsArchived);
+        if (doc is null) return NotFound();
 
         var actorId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var actorName = User.FindFirstValue(ClaimTypes.Name) ?? "Unknown";
@@ -188,6 +197,8 @@ public class DocumentsController : ControllerBase
         Notes = d.Notes,
         CreatedAt = d.CreatedAt,
         ProductId = d.ProductId,
-        CreatedById = d.CreatedById
+        CreatedById = d.CreatedById,
+        CreatedByName = d.CreatedBy?.FullName ?? string.Empty,
+        IsArchived = d.IsArchived
     };
 }

@@ -69,16 +69,11 @@ namespace PharmaDocs.Infrastructure.Migrations
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uuid");
-
                     b.HasKey("Id");
 
                     b.HasIndex("ChangedById");
 
                     b.HasIndex("SubmissionPackageId");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("AuditLogs");
                 });
@@ -125,9 +120,6 @@ namespace PharmaDocs.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("Version")
                         .IsRequired()
                         .HasColumnType("text");
@@ -139,8 +131,6 @@ namespace PharmaDocs.Infrastructure.Migrations
                     b.HasIndex("CreatedById");
 
                     b.HasIndex("ProductId");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("DocumentRecords");
 
@@ -225,16 +215,11 @@ namespace PharmaDocs.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uuid");
-
                     b.HasKey("Id");
 
                     b.HasIndex("ArchivedById");
 
                     b.HasIndex("CreatedById");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("Products");
 
@@ -329,9 +314,6 @@ namespace PharmaDocs.Infrastructure.Migrations
                     b.Property<DateOnly?>("TargetDate")
                         .HasColumnType("date");
 
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uuid");
-
                     b.HasKey("Id");
 
                     b.HasIndex("ArchivedById");
@@ -339,8 +321,6 @@ namespace PharmaDocs.Infrastructure.Migrations
                     b.HasIndex("CreatedById");
 
                     b.HasIndex("ProductId");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("SubmissionPackages");
 
@@ -427,10 +407,6 @@ namespace PharmaDocs.Infrastructure.Migrations
                         .HasForeignKey("SubmissionPackageId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("PharmaDocs.Domain.Entities.User", null)
-                        .WithMany("AuditLogs")
-                        .HasForeignKey("UserId");
-
                     b.Navigation("ChangedBy");
 
                     b.Navigation("SubmissionPackage");
@@ -455,10 +431,6 @@ namespace PharmaDocs.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("PharmaDocs.Domain.Entities.User", null)
-                        .WithMany("DocumentRecords")
-                        .HasForeignKey("UserId");
-
                     b.Navigation("ArchivedBy");
 
                     b.Navigation("CreatedBy");
@@ -478,10 +450,6 @@ namespace PharmaDocs.Infrastructure.Migrations
                         .HasForeignKey("CreatedById")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.HasOne("PharmaDocs.Domain.Entities.User", null)
-                        .WithMany("Products")
-                        .HasForeignKey("UserId");
 
                     b.Navigation("ArchivedBy");
 
@@ -526,10 +494,6 @@ namespace PharmaDocs.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("PharmaDocs.Domain.Entities.User", null)
-                        .WithMany("SubmissionPackages")
-                        .HasForeignKey("UserId");
-
                     b.Navigation("ArchivedBy");
 
                     b.Navigation("CreatedBy");
@@ -554,17 +518,6 @@ namespace PharmaDocs.Infrastructure.Migrations
                     b.Navigation("AuditLogs");
 
                     b.Navigation("SubmissionDocuments");
-                });
-
-            modelBuilder.Entity("PharmaDocs.Domain.Entities.User", b =>
-                {
-                    b.Navigation("AuditLogs");
-
-                    b.Navigation("DocumentRecords");
-
-                    b.Navigation("Products");
-
-                    b.Navigation("SubmissionPackages");
                 });
 #pragma warning restore 612, 618
         }

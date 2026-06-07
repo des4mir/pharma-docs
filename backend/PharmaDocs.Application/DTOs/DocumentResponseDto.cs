@@ -12,4 +12,6 @@ public class DocumentResponseDto
     public DateTime CreatedAt { get; set; }
     public Guid ProductId { get; set; }
     public Guid CreatedById { get; set; }
+    public string CreatedByName { get; set; } = string.Empty;
+    public bool IsArchived { get; set; }
 }

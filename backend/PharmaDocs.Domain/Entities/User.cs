@@ -11,10 +11,4 @@ public class User
     public UserRole Role { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public bool IsActive { get; set; } = true;
-
-    // Navigation properties
-    public ICollection<Product> Products { get; set; } = new List<Product>();
-    public ICollection<SubmissionPackage> SubmissionPackages { get; set; } = new List<SubmissionPackage>();
-    public ICollection<DocumentRecord> DocumentRecords { get; set; } = new List<DocumentRecord>();
-    public ICollection<AuditLog> AuditLogs { get; set; } = new List<AuditLog>();
 }

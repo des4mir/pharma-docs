@@ -69,32 +69,6 @@ public class SubmissionPackagesController : ControllerBase
         return Ok(packages.Select(ToDto));
     }
 
-    /// <summary>Get the full audit log for a submission package. Requires authentication.</summary>
-    [HttpGet("{id:guid}/auditlog")]
-    [ProducesResponseType(typeof(IEnumerable<AuditLogResponseDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetAuditLog(Guid id)
-    {
-        var exists = await _context.SubmissionPackages.AnyAsync(s => s.Id == id);
-        if (!exists) return NotFound();
-
-        var logs = await _context.AuditLogs
-            .Where(a => a.EntityType == "SubmissionPackage" && a.EntityId == id)
-            .OrderBy(a => a.Timestamp)
-            .ToListAsync();
-
-        return Ok(logs.Select(a => new AuditLogResponseDto
-        {
-            Id = a.Id,
-            OldStatus = a.OldStatus,
-            NewStatus = a.NewStatus,
-            ChangedByName = a.ChangedByName,
-            Notes = a.Notes,
-            Timestamp = a.Timestamp
-        }));
-    }
-
     /// <summary>Create a new submission package. Requires RegAffairsOfficer role.</summary>
     [HttpPost]
     [Authorize(Roles = "RegAffairsOfficer")]

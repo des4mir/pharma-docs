@@ -28,6 +28,7 @@ public class ProductsController : ControllerBase
     public async Task<IActionResult> GetAll()
     {
         var products = await _context.Products
+            .Include(p => p.CreatedBy)
             .Where(p => !p.IsArchived)
             .OrderBy(p => p.Name)
             .ToListAsync();
@@ -41,8 +42,10 @@ public class ProductsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id)
     {
-        var product = await _context.Products.FindAsync(id);
-        if (product is null || product.IsArchived) return NotFound();
+        var product = await _context.Products
+            .Include(p => p.CreatedBy)
+            .FirstOrDefaultAsync(p => p.Id == id && !p.IsArchived);
+        if (product is null) return NotFound();
         return Ok(ToDto(product));
     }
 
@@ -87,6 +90,8 @@ public class ProductsController : ControllerBase
         });
 
         await _context.SaveChangesAsync();
+        await _context.Entry(product).Reference(p => p.CreatedBy).LoadAsync();
+
         return CreatedAtAction(nameof(GetById), new { id = product.Id }, ToDto(product));
     }
 
@@ -99,8 +104,10 @@ public class ProductsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateProductDto dto)
     {
-        var product = await _context.Products.FindAsync(id);
-        if (product is null || product.IsArchived) return NotFound();
+        var product = await _context.Products
+            .Include(p => p.CreatedBy)
+            .FirstOrDefaultAsync(p => p.Id == id && !p.IsArchived);
+        if (product is null) return NotFound();
 
         var actorId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var actorName = User.FindFirstValue(ClaimTypes.Name) ?? "Unknown";
@@ -180,6 +187,8 @@ public class ProductsController : ControllerBase
         RouteOfAdministration = p.RouteOfAdministration,
         TherapeuticCategory = p.TherapeuticCategory,
         CreatedAt = p.CreatedAt,
-        CreatedById = p.CreatedById
+        CreatedById = p.CreatedById,
+        CreatedByName = p.CreatedBy?.FullName ?? string.Empty,
+        IsArchived = p.IsArchived
     };
 }

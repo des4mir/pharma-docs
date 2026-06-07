@@ -13,4 +13,6 @@ public class ProductResponseDto
     public string TherapeuticCategory { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public Guid CreatedById { get; set; }
+    public string CreatedByName { get; set; } = string.Empty;
+    public bool IsArchived { get; set; }
 }

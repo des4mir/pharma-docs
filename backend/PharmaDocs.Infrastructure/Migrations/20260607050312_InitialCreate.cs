@@ -22,7 +22,8 @@ namespace PharmaDocs.Infrastructure.Migrations
                     PasswordHash = table.Column<string>(type: "text", nullable: false),
                     FullName = table.Column<string>(type: "text", nullable: false),
                     Role = table.Column<string>(type: "text", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -43,17 +44,26 @@ namespace PharmaDocs.Infrastructure.Migrations
                     RouteOfAdministration = table.Column<string>(type: "text", nullable: false),
                     TherapeuticCategory = table.Column<string>(type: "text", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    IsArchived = table.Column<bool>(type: "boolean", nullable: false),
+                    ArchivedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    ArchivedById = table.Column<Guid>(type: "uuid", nullable: true),
                     CreatedById = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Products", x => x.Id);
                     table.ForeignKey(
+                        name: "FK_Products_Users_ArchivedById",
+                        column: x => x.ArchivedById,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
                         name: "FK_Products_Users_CreatedById",
                         column: x => x.CreatedById,
                         principalTable: "Users",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -68,6 +78,9 @@ namespace PharmaDocs.Infrastructure.Migrations
                     Date = table.Column<DateOnly>(type: "date", nullable: false),
                     Notes = table.Column<string>(type: "text", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    IsArchived = table.Column<bool>(type: "boolean", nullable: false),
+                    ArchivedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    ArchivedById = table.Column<Guid>(type: "uuid", nullable: true),
                     ProductId = table.Column<Guid>(type: "uuid", nullable: false),
                     CreatedById = table.Column<Guid>(type: "uuid", nullable: false)
                 },
@@ -81,11 +94,17 @@ namespace PharmaDocs.Infrastructure.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
+                        name: "FK_DocumentRecords_Users_ArchivedById",
+                        column: x => x.ArchivedById,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
                         name: "FK_DocumentRecords_Users_CreatedById",
                         column: x => x.CreatedById,
                         principalTable: "Users",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -99,6 +118,9 @@ namespace PharmaDocs.Infrastructure.Migrations
                     TargetDate = table.Column<DateOnly>(type: "date", nullable: true),
                     SubmissionDate = table.Column<DateOnly>(type: "date", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    IsArchived = table.Column<bool>(type: "boolean", nullable: false),
+                    ArchivedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    ArchivedById = table.Column<Guid>(type: "uuid", nullable: true),
                     ProductId = table.Column<Guid>(type: "uuid", nullable: false),
                     CreatedById = table.Column<Guid>(type: "uuid", nullable: false)
                 },
@@ -112,11 +134,17 @@ namespace PharmaDocs.Infrastructure.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
+                        name: "FK_SubmissionPackages_Users_ArchivedById",
+                        column: x => x.ArchivedById,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
                         name: "FK_SubmissionPackages_Users_CreatedById",
                         column: x => x.CreatedById,
                         principalTable: "Users",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -124,12 +152,17 @@ namespace PharmaDocs.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    EntityType = table.Column<string>(type: "text", nullable: false),
+                    EntityId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Action = table.Column<string>(type: "text", nullable: false),
+                    OldValues = table.Column<string>(type: "text", nullable: true),
+                    NewValues = table.Column<string>(type: "text", nullable: true),
                     OldStatus = table.Column<string>(type: "text", nullable: false),
                     NewStatus = table.Column<string>(type: "text", nullable: false),
                     ChangedByName = table.Column<string>(type: "text", nullable: false),
                     Notes = table.Column<string>(type: "text", nullable: true),
                     Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    SubmissionPackageId = table.Column<Guid>(type: "uuid", nullable: false),
+                    SubmissionPackageId = table.Column<Guid>(type: "uuid", nullable: true),
                     ChangedById = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
@@ -140,13 +173,13 @@ namespace PharmaDocs.Infrastructure.Migrations
                         column: x => x.SubmissionPackageId,
                         principalTable: "SubmissionPackages",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.SetNull);
                     table.ForeignKey(
                         name: "FK_AuditLogs_Users_ChangedById",
                         column: x => x.ChangedById,
                         principalTable: "Users",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -176,30 +209,35 @@ namespace PharmaDocs.Infrastructure.Migrations
 
             migrationBuilder.InsertData(
                 table: "Users",
-                columns: new[] { "Id", "CreatedAt", "Email", "FullName", "PasswordHash", "Role" },
+                columns: new[] { "Id", "CreatedAt", "Email", "FullName", "IsActive", "PasswordHash", "Role" },
                 values: new object[,]
                 {
-                    { new Guid("11111111-1111-1111-1111-111111111111"), new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), "sarah@pharmadocs.ca", "Sarah Leblanc", "$2a$11$gC76SgMbnnNGOHdy6WKR/uaAL2ZkBonnlNbdr5M/bLYCb8C1NTGBu", "RegAffairsOfficer" },
-                    { new Guid("22222222-2222-2222-2222-222222222222"), new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), "james@pharmadocs.ca", "James Okafor", "$2a$11$gC76SgMbnnNGOHdy6WKR/uaAL2ZkBonnlNbdr5M/bLYCb8C1NTGBu", "Viewer" }
+                    { new Guid("11111111-1111-1111-1111-111111111111"), new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), "sarah@pharmadocs.ca", "Sarah Leblanc", true, "$2a$11$gC76SgMbnnNGOHdy6WKR/uaAL2ZkBonnlNbdr5M/bLYCb8C1NTGBu", "RegAffairsOfficer" },
+                    { new Guid("22222222-2222-2222-2222-222222222222"), new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), "james@pharmadocs.ca", "James Okafor", true, "$2a$11$gC76SgMbnnNGOHdy6WKR/uaAL2ZkBonnlNbdr5M/bLYCb8C1NTGBu", "Viewer" }
                 });
 
             migrationBuilder.InsertData(
                 table: "Products",
-                columns: new[] { "Id", "CreatedAt", "CreatedById", "DIN", "DosageForm", "Manufacturer", "MedicinalIngredient", "NPN", "Name", "RouteOfAdministration", "TherapeuticCategory" },
+                columns: new[] { "Id", "ArchivedAt", "ArchivedById", "CreatedAt", "CreatedById", "DIN", "DosageForm", "IsArchived", "Manufacturer", "MedicinalIngredient", "NPN", "Name", "RouteOfAdministration", "TherapeuticCategory" },
                 values: new object[,]
                 {
-                    { new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), new DateTime(2026, 1, 15, 0, 0, 0, 0, DateTimeKind.Utc), new Guid("11111111-1111-1111-1111-111111111111"), "02245276", "Tablet", "Apotex Inc.", "Atorvastatin Calcium", null, "Atorvastatin 20mg Tablet", "Oral", "Cardiovascular" },
-                    { new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"), new DateTime(2026, 1, 15, 0, 0, 0, 0, DateTimeKind.Utc), new Guid("11111111-1111-1111-1111-111111111111"), "02162512", "Tablet", "Teva Canada", "Metformin Hydrochloride", null, "Metformin 500mg Tablet", "Oral", "Antidiabetic" }
+                    { new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), null, null, new DateTime(2026, 1, 15, 0, 0, 0, 0, DateTimeKind.Utc), new Guid("11111111-1111-1111-1111-111111111111"), "02245276", "Tablet", false, "Apotex Inc.", "Atorvastatin Calcium", null, "Atorvastatin 20mg Tablet", "Oral", "Cardiovascular" },
+                    { new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"), null, null, new DateTime(2026, 1, 15, 0, 0, 0, 0, DateTimeKind.Utc), new Guid("11111111-1111-1111-1111-111111111111"), "02162512", "Tablet", false, "Teva Canada", "Metformin Hydrochloride", null, "Metformin 500mg Tablet", "Oral", "Antidiabetic" }
                 });
 
             migrationBuilder.InsertData(
                 table: "DocumentRecords",
-                columns: new[] { "Id", "CreatedAt", "CreatedById", "Date", "Notes", "ProductId", "Status", "Title", "Type", "Version" },
+                columns: new[] { "Id", "ArchivedAt", "ArchivedById", "CreatedAt", "CreatedById", "Date", "IsArchived", "Notes", "ProductId", "Status", "Title", "Type", "Version" },
                 values: new object[,]
                 {
-                    { new Guid("cccccccc-cccc-cccc-cccc-cccccccccccc"), new DateTime(2026, 1, 20, 0, 0, 0, 0, DateTimeKind.Utc), new Guid("11111111-1111-1111-1111-111111111111"), new DateOnly(2026, 1, 20), "Initial approved monograph", new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), "Final", "Atorvastatin Product Monograph v1.0", "ProductMonograph", "1.0" },
-                    { new Guid("dddddddd-dddd-dddd-dddd-dddddddddddd"), new DateTime(2026, 2, 1, 0, 0, 0, 0, DateTimeKind.Utc), new Guid("11111111-1111-1111-1111-111111111111"), new DateOnly(2026, 2, 1), null, new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"), "Draft", "Metformin Certificate of Analysis v1.0", "CertificateOfAnalysis", "1.0" }
+                    { new Guid("cccccccc-cccc-cccc-cccc-cccccccccccc"), null, null, new DateTime(2026, 1, 20, 0, 0, 0, 0, DateTimeKind.Utc), new Guid("11111111-1111-1111-1111-111111111111"), new DateOnly(2026, 1, 20), false, "Initial approved monograph", new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), "Final", "Atorvastatin Product Monograph v1.0", "ProductMonograph", "1.0" },
+                    { new Guid("dddddddd-dddd-dddd-dddd-dddddddddddd"), null, null, new DateTime(2026, 2, 1, 0, 0, 0, 0, DateTimeKind.Utc), new Guid("11111111-1111-1111-1111-111111111111"), new DateOnly(2026, 2, 1), false, null, new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"), "Draft", "Metformin Certificate of Analysis v1.0", "CertificateOfAnalysis", "1.0" }
                 });
+
+            migrationBuilder.InsertData(
+                table: "SubmissionPackages",
+                columns: new[] { "Id", "ArchivedAt", "ArchivedById", "CreatedAt", "CreatedById", "IsArchived", "ProductId", "RegulatoryBody", "Status", "SubmissionDate", "SubmissionType", "TargetDate" },
+                values: new object[] { new Guid("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"), null, null, new DateTime(2026, 3, 1, 0, 0, 0, 0, DateTimeKind.Utc), new Guid("11111111-1111-1111-1111-111111111111"), false, new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), "Health Canada", "Draft", null, "NDS", new DateOnly(2026, 6, 30) });
 
             migrationBuilder.CreateIndex(
                 name: "IX_AuditLogs_ChangedById",
@@ -212,6 +250,11 @@ namespace PharmaDocs.Infrastructure.Migrations
                 column: "SubmissionPackageId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_DocumentRecords_ArchivedById",
+                table: "DocumentRecords",
+                column: "ArchivedById");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_DocumentRecords_CreatedById",
                 table: "DocumentRecords",
                 column: "CreatedById");
@@ -222,6 +265,11 @@ namespace PharmaDocs.Infrastructure.Migrations
                 column: "ProductId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Products_ArchivedById",
+                table: "Products",
+                column: "ArchivedById");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Products_CreatedById",
                 table: "Products",
                 column: "CreatedById");
@@ -230,6 +278,11 @@ namespace PharmaDocs.Infrastructure.Migrations
                 name: "IX_SubmissionDocuments_DocumentRecordId",
                 table: "SubmissionDocuments",
                 column: "DocumentRecordId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SubmissionPackages_ArchivedById",
+                table: "SubmissionPackages",
+                column: "ArchivedById");
 
             migrationBuilder.CreateIndex(
                 name: "IX_SubmissionPackages_CreatedById",
