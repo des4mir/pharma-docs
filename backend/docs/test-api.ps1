@@ -1,424 +1,239 @@
-# PharmaDocs API Testing Script
-# Tests endpoints with both user roles (RegAffairsOfficer and Viewer)
+# ============================================================
+#  PharmaDocs API — Automated Test Script
+#  Version: 0.9.0  |  Updated: 2026-06-24
+#
+#  Controllers tested:
+#    AuthController                POST /api/auth/login
+#    ProductsController            GET | GET/{id} | POST | PUT/{id} | PATCH/{id}/archive
+#    DocumentsController           GET | GET/{id} | GET/by-product/{id} | POST | PUT/{id} | PATCH/{id}/archive
+#    SubmissionPackagesController  GET | GET/{id} | GET/by-product/{id} | POST | PUT/{id} | PATCH/{id}/status | PATCH/{id}/archive
+#    AuditLogsController           GET /api/auditlogs?entityType=&entityId=
+#
+#  Run: .\test-api.ps1
+# ============================================================
 
-$API_URL = "http://localhost:5046"
+$BaseUrl = "http://localhost:5046"
+$Pass    = 0
+$Fail    = 0
 
-# Test users (from database seeding)
-$users = @(
-    @{
-        Email    = "sarah@pharmadocs.ca"
-        Password = "Demo1234!"
-        FullName = "Sarah Leblanc"
-        Role     = "RegAffairsOfficer"
-    },
-    @{
-        Email    = "james@pharmadocs.ca"
-        Password = "Demo1234!"
-        FullName = "James Okafor"
-        Role     = "Viewer"
+function Assert($Label, $Actual, $Expected) {
+    if ($Actual -eq $Expected) {
+        Write-Host "  [PASS] $Label" -ForegroundColor Green
+        $script:Pass++
+    } else {
+        Write-Host "  [FAIL] $Label -- expected $Expected, got $Actual" -ForegroundColor Red
+        $script:Fail++
     }
-)
+}
 
-# Guids for testing (from seeded data)
-$productId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
-$documentId = "cccccccc-cccc-cccc-cccc-cccccccccccc"
-
-$tokens = @{}
-
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "PharmaDocs API Testing Script" -ForegroundColor Cyan
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host ""
-
-# Function to pretty-print JSON responses
-function Format-JsonResponse {
-    param([string]$JsonString)
+function Call($Method, $Url, $Token = $null, $Body = $null) {
+    $headers = @{ "Content-Type" = "application/json" }
+    if ($Token) { $headers["Authorization"] = "Bearer $Token" }
     try {
-        $JsonString | ConvertFrom-Json | ConvertTo-Json | Write-Host -ForegroundColor Green
-    }
-    catch {
-        Write-Host $JsonString -ForegroundColor Green
-    }
-}
-
-# ==========================================
-# 1. LOGIN FOR BOTH USERS
-# ==========================================
-Write-Host "Step 1: LOGIN FOR BOTH USERS" -ForegroundColor Yellow
-Write-Host "----------------------------------------" -ForegroundColor Yellow
-
-foreach ($user in $users) {
-    Write-Host ""
-    Write-Host "Logging in as: $($user.Role) ($($user.Email))" -ForegroundColor Magenta
-    
-    $loginBody = @{
-        email    = $user.Email
-        password = $user.Password
-    } | ConvertTo-Json
-    
-    Write-Host "Request: POST $API_URL/api/auth/login" -ForegroundColor Cyan
-    Write-Host "Body: $loginBody" -ForegroundColor Cyan
-    
-    try {
-        $response = Invoke-RestMethod -Uri "$API_URL/api/auth/login" `
-            -Method Post `
-            -ContentType "application/json" `
-            -Body $loginBody `
-            -ErrorAction Stop
-        
-        Write-Host "Response: Status 200 OK" -ForegroundColor Green
-        Format-JsonResponse ($response | ConvertTo-Json)
-        
-        $tokens[$user.Role] = $response.token
-        Write-Host "Token saved for $($user.Role)" -ForegroundColor Green
-    }
-    catch {
-        Write-Host "Response: Status $($_.Exception.Response.StatusCode)" -ForegroundColor Red
-        Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Red
-        Write-Host "TIP: If login fails, the password might be different." -ForegroundColor Yellow
+        $params = @{ Method = $Method; Uri = $Url; Headers = $headers; ErrorAction = "Stop" }
+        if ($Body) { $params["Body"] = ($Body | ConvertTo-Json -Depth 10) }
+        return (Invoke-WebRequest @params).StatusCode
+    } catch {
+        return [int]$_.Exception.Response.StatusCode
     }
 }
 
-Write-Host ""
-Write-Host ""
+# ============================================================
+Write-Host "`n=== STEP 1: Auth ===" -ForegroundColor Cyan
+# ============================================================
 
-# ==========================================
-# 2. GET ALL PRODUCTS (Both roles can access)
-# ==========================================
-Write-Host "Step 2: GET ALL PRODUCTS (Requires Auth)" -ForegroundColor Yellow
-Write-Host "----------------------------------------" -ForegroundColor Yellow
-
-foreach ($role in @("RegAffairsOfficer", "Viewer")) {
-    Write-Host ""
-    Write-Host "Testing as: $role" -ForegroundColor Magenta
-    
-    if ($tokens.ContainsKey($role)) {
-        $token = $tokens[$role]
-        
-        Write-Host "Request: GET $API_URL/api/products" -ForegroundColor Cyan
-        Write-Host "Header: Authorization: Bearer <token>" -ForegroundColor Cyan
-        
-        try {
-            $response = Invoke-RestMethod -Uri "$API_URL/api/products" `
-                -Method Get `
-                -Headers @{Authorization = "Bearer $token" } `
-                -ErrorAction Stop
-            
-            Write-Host "Response: Status 200 OK" -ForegroundColor Green
-            Write-Host "Products found: $($response.Count)" -ForegroundColor Green
-            Format-JsonResponse ($response | ConvertTo-Json)
-        }
-        catch {
-            Write-Host "Response: Status $($_.Exception.Response.StatusCode)" -ForegroundColor Red
-            Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Red
-        }
-    }
-    else {
-        Write-Host "Skipped: No valid token for $role" -ForegroundColor Yellow
-    }
-}
-
-Write-Host ""
-Write-Host ""
-
-# ==========================================
-# 3. GET SINGLE PRODUCT BY ID
-# ==========================================
-Write-Host "Step 3: GET SINGLE PRODUCT BY ID" -ForegroundColor Yellow
-Write-Host "----------------------------------------" -ForegroundColor Yellow
-
-foreach ($role in @("RegAffairsOfficer", "Viewer")) {
-    Write-Host ""
-    Write-Host "Testing as: $role" -ForegroundColor Magenta
-    
-    if ($tokens.ContainsKey($role)) {
-        $token = $tokens[$role]
-        
-        Write-Host "Request: GET $API_URL/api/products/$productId" -ForegroundColor Cyan
-        
-        try {
-            $response = Invoke-RestMethod -Uri "$API_URL/api/products/$productId" `
-                -Method Get `
-                -Headers @{Authorization = "Bearer $token" } `
-                -ErrorAction Stop
-            
-            Write-Host "Response: Status 200 OK" -ForegroundColor Green
-            Format-JsonResponse ($response | ConvertTo-Json)
-        }
-        catch {
-            Write-Host "Response: Status $($_.Exception.Response.StatusCode)" -ForegroundColor Red
-        }
-    }
-}
-
-Write-Host ""
-Write-Host ""
-
-# ==========================================
-# 4. CREATE PRODUCT (RegAffairsOfficer Only)
-# ==========================================
-Write-Host "Step 4: CREATE PRODUCT (RegAffairsOfficer Only)" -ForegroundColor Yellow
-Write-Host "----------------------------------------" -ForegroundColor Yellow
-
-$createProductBody = @{
-    name                  = "Aspirin 500mg Test"
-    din                   = "00000001"
-    npn                   = $null
-    medicinalIngredient   = "Acetylsalicylic Acid"
-    manufacturer          = "Test Pharma Ltd"
-    dosageForm            = "Tablet"
-    routeOfAdministration = "Oral"
-    therapeuticCategory   = "Analgesic"
-} | ConvertTo-Json
-
-foreach ($role in @("RegAffairsOfficer", "Viewer")) {
-    Write-Host ""
-    Write-Host "Testing as: $role" -ForegroundColor Magenta
-    
-    if ($tokens.ContainsKey($role)) {
-        $token = $tokens[$role]
-        
-        Write-Host "Request: POST $API_URL/api/products" -ForegroundColor Cyan
-        Write-Host "Body: $createProductBody" -ForegroundColor Cyan
-        
-        try {
-            $response = Invoke-RestMethod -Uri "$API_URL/api/products" `
-                -Method Post `
-                -Headers @{Authorization = "Bearer $token" } `
-                -ContentType "application/json" `
-                -Body $createProductBody `
-                -ErrorAction Stop
-            
-            Write-Host "Response: Status 201 Created" -ForegroundColor Green
-            Write-Host "SUCCESS: $role can create products" -ForegroundColor Green
-            Format-JsonResponse ($response | ConvertTo-Json)
-        }
-        catch {
-            $statusCode = $_.Exception.Response.StatusCode
-            Write-Host "Response: Status $statusCode" -ForegroundColor Red
-            
-            if ($statusCode -eq "Forbidden") {
-                Write-Host "EXPECTED: $role cannot create products (Forbidden 403)" -ForegroundColor Yellow
-            }
-            else {
-                Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Red
-            }
-        }
-    }
-}
-
-Write-Host ""
-Write-Host ""
-
-# ==========================================
-# 5. GET ALL DOCUMENTS (Both roles can access)
-# ==========================================
-Write-Host "Step 5: GET ALL DOCUMENTS (Requires Auth)" -ForegroundColor Yellow
-Write-Host "----------------------------------------" -ForegroundColor Yellow
-
-foreach ($role in @("RegAffairsOfficer", "Viewer")) {
-    Write-Host ""
-    Write-Host "Testing as: $role" -ForegroundColor Magenta
-    
-    if ($tokens.ContainsKey($role)) {
-        $token = $tokens[$role]
-        
-        Write-Host "Request: GET $API_URL/api/documents" -ForegroundColor Cyan
-        
-        try {
-            $response = Invoke-RestMethod -Uri "$API_URL/api/documents" `
-                -Method Get `
-                -Headers @{Authorization = "Bearer $token" } `
-                -ErrorAction Stop
-            
-            Write-Host "Response: Status 200 OK" -ForegroundColor Green
-            Write-Host "Documents found: $($response.Count)" -ForegroundColor Green
-            Format-JsonResponse ($response | ConvertTo-Json)
-        }
-        catch {
-            Write-Host "Response: Status $($_.Exception.Response.StatusCode)" -ForegroundColor Red
-        }
-    }
-}
-
-Write-Host ""
-Write-Host ""
-
-# ==========================================
-# 6. GET DOCUMENTS BY PRODUCT
-# ==========================================
-Write-Host "Step 6: GET DOCUMENTS BY PRODUCT" -ForegroundColor Yellow
-Write-Host "----------------------------------------" -ForegroundColor Yellow
-
-foreach ($role in @("RegAffairsOfficer", "Viewer")) {
-    Write-Host ""
-    Write-Host "Testing as: $role" -ForegroundColor Magenta
-    
-    if ($tokens.ContainsKey($role)) {
-        $token = $tokens[$role]
-        
-        Write-Host "Request: GET $API_URL/api/documents/by-product/$productId" -ForegroundColor Cyan
-        
-        try {
-            $response = Invoke-RestMethod -Uri "$API_URL/api/documents/by-product/$productId" `
-                -Method Get `
-                -Headers @{Authorization = "Bearer $token" } `
-                -ErrorAction Stop
-            
-            Write-Host "Response: Status 200 OK" -ForegroundColor Green
-            Write-Host "Documents found: $($response.Count)" -ForegroundColor Green
-            Format-JsonResponse ($response | ConvertTo-Json)
-        }
-        catch {
-            Write-Host "Response: Status $($_.Exception.Response.StatusCode)" -ForegroundColor Red
-        }
-    }
-}
-
-Write-Host ""
-Write-Host ""
-
-# ==========================================
-# 7. GET SINGLE DOCUMENT BY ID
-# ==========================================
-Write-Host "Step 7: GET SINGLE DOCUMENT BY ID" -ForegroundColor Yellow
-Write-Host "----------------------------------------" -ForegroundColor Yellow
-
-foreach ($role in @("RegAffairsOfficer", "Viewer")) {
-    Write-Host ""
-    Write-Host "Testing as: $role" -ForegroundColor Magenta
-    
-    if ($tokens.ContainsKey($role)) {
-        $token = $tokens[$role]
-        
-        Write-Host "Request: GET $API_URL/api/documents/$documentId" -ForegroundColor Cyan
-        
-        try {
-            $response = Invoke-RestMethod -Uri "$API_URL/api/documents/$documentId" `
-                -Method Get `
-                -Headers @{Authorization = "Bearer $token" } `
-                -ErrorAction Stop
-            
-            Write-Host "Response: Status 200 OK" -ForegroundColor Green
-            Format-JsonResponse ($response | ConvertTo-Json)
-        }
-        catch {
-            Write-Host "Response: Status $($_.Exception.Response.StatusCode)" -ForegroundColor Red
-        }
-    }
-}
-
-Write-Host ""
-Write-Host ""
-
-# ==========================================
-# 8. CREATE DOCUMENT (RegAffairsOfficer Only)
-# ==========================================
-Write-Host "Step 8: CREATE DOCUMENT (RegAffairsOfficer Only)" -ForegroundColor Yellow
-Write-Host "----------------------------------------" -ForegroundColor Yellow
-
-$createDocumentBody = @{
-    title     = "Test Document v2.0"
-    type      = "ProductMonograph"
-    version   = "2.0"
-    date      = Get-Date -Format "yyyy-MM-dd"
-    notes     = "Test document created via API"
-    productId = $productId
-} | ConvertTo-Json
-
-foreach ($role in @("RegAffairsOfficer", "Viewer")) {
-    Write-Host ""
-    Write-Host "Testing as: $role" -ForegroundColor Magenta
-    
-    if ($tokens.ContainsKey($role)) {
-        $token = $tokens[$role]
-        
-        Write-Host "Request: POST $API_URL/api/documents" -ForegroundColor Cyan
-        Write-Host "Body: $createDocumentBody" -ForegroundColor Cyan
-        
-        try {
-            $response = Invoke-RestMethod -Uri "$API_URL/api/documents" `
-                -Method Post `
-                -Headers @{Authorization = "Bearer $token" } `
-                -ContentType "application/json" `
-                -Body $createDocumentBody `
-                -ErrorAction Stop
-            
-            Write-Host "Response: Status 201 Created" -ForegroundColor Green
-            Write-Host "SUCCESS: $role can create documents" -ForegroundColor Green
-            Format-JsonResponse ($response | ConvertTo-Json)
-        }
-        catch {
-            $statusCode = $_.Exception.Response.StatusCode
-            Write-Host "Response: Status $statusCode" -ForegroundColor Red
-            
-            if ($statusCode -eq "Forbidden") {
-                Write-Host "EXPECTED: $role cannot create documents (Forbidden 403)" -ForegroundColor Yellow
-            }
-            else {
-                Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Red
-            }
-        }
-    }
-}
-
-Write-Host ""
-Write-Host ""
-
-# ==========================================
-# 9. TEST UNAUTHENTICATED ACCESS
-# ==========================================
-Write-Host "Step 9: TEST UNAUTHENTICATED ACCESS" -ForegroundColor Yellow
-Write-Host "----------------------------------------" -ForegroundColor Yellow
-Write-Host ""
-Write-Host "Testing as: UNAUTHENTICATED (no token)" -ForegroundColor Magenta
-
-Write-Host "Request: GET $API_URL/api/products" -ForegroundColor Cyan
+$OfficerToken = $null
+$ViewerToken  = $null
 
 try {
-    $response = Invoke-RestMethod -Uri "$API_URL/api/products" `
-        -Method Get `
-        -ErrorAction Stop
-    
-    Write-Host "Response: Status 200 OK (Unexpected!)" -ForegroundColor Red
-}
-catch {
-    $statusCode = $_.Exception.Response.StatusCode
-    Write-Host "Response: Status $statusCode" -ForegroundColor Red
-    
-    if ($statusCode -eq "Unauthorized") {
-        Write-Host "EXPECTED: Unauthenticated access denied (Unauthorized 401)" -ForegroundColor Green
-    }
-}
+    $r = Invoke-WebRequest -Method POST -Uri "$BaseUrl/api/auth/login" `
+         -Headers @{"Content-Type"="application/json"} `
+         -Body '{"email":"sarah@pharmadocs.ca","password":"Demo1234!"}' -ErrorAction Stop
+    $OfficerToken = ($r.Content | ConvertFrom-Json).token
+    Assert "Login as RegAffairsOfficer (Sarah)" $r.StatusCode 200
+} catch { Assert "Login as RegAffairsOfficer (Sarah)" 0 200 }
 
-Write-Host ""
-Write-Host ""
+try {
+    $r = Invoke-WebRequest -Method POST -Uri "$BaseUrl/api/auth/login" `
+         -Headers @{"Content-Type"="application/json"} `
+         -Body '{"email":"james@pharmadocs.ca","password":"Demo1234!"}' -ErrorAction Stop
+    $ViewerToken = ($r.Content | ConvertFrom-Json).token
+    Assert "Login as Viewer (James)" $r.StatusCode 200
+} catch { Assert "Login as Viewer (James)" 0 200 }
 
-# ==========================================
-# SUMMARY
-# ==========================================
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "TESTING SUMMARY" -ForegroundColor Cyan
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host ""
-Write-Host "API Endpoint: $API_URL" -ForegroundColor White
-Write-Host ""
-Write-Host "Users Tested:" -ForegroundColor Yellow
-Write-Host "  1. sarah@pharmadocs.ca (RegAffairsOfficer) - Can CREATE/UPDATE/DELETE" -ForegroundColor Green
-Write-Host "  2. james@pharmadocs.ca (Viewer) - Can only READ" -ForegroundColor Green
-Write-Host ""
-Write-Host "Endpoints Tested:" -ForegroundColor Yellow
-Write-Host "  - POST   /api/auth/login" -ForegroundColor Cyan
-Write-Host "  - GET    /api/products" -ForegroundColor Cyan
-Write-Host "  - GET    /api/products/{id}" -ForegroundColor Cyan
-Write-Host "  - POST   /api/products (RegAffairsOfficer only)" -ForegroundColor Cyan
-Write-Host "  - GET    /api/documents" -ForegroundColor Cyan
-Write-Host "  - GET    /api/documents/by-product/{productId}" -ForegroundColor Cyan
-Write-Host "  - GET    /api/documents/{id}" -ForegroundColor Cyan
-Write-Host "  - POST   /api/documents (RegAffairsOfficer only)" -ForegroundColor Cyan
-Write-Host ""
-Write-Host "Key Findings:" -ForegroundColor Yellow
-Write-Host "  ✓ Both roles can read (GET) all endpoints after authentication" -ForegroundColor Green
-Write-Host "  ✓ Only RegAffairsOfficer can create (POST) products and documents" -ForegroundColor Green
-Write-Host "  ✓ Unauthenticated access returns 401 Unauthorized" -ForegroundColor Green
-Write-Host ""
+Assert "Login with bad credentials returns 401" `
+    (Call "POST" "$BaseUrl/api/auth/login" -Body @{email="x@x.com";password="wrong"}) 401
+
+# ============================================================
+Write-Host "`n=== STEP 2: Products — read ===" -ForegroundColor Cyan
+# ============================================================
+
+Assert "GET /api/products -- officer 200" (Call "GET" "$BaseUrl/api/products" $OfficerToken) 200
+Assert "GET /api/products -- viewer 200"  (Call "GET" "$BaseUrl/api/products" $ViewerToken) 200
+Assert "GET /api/products -- unauth 401"  (Call "GET" "$BaseUrl/api/products") 401
+Assert "GET /api/products/{id} -- officer 200" `
+    (Call "GET" "$BaseUrl/api/products/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa" $OfficerToken) 200
+Assert "GET /api/products/{id} -- viewer 200" `
+    (Call "GET" "$BaseUrl/api/products/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa" $ViewerToken) 200
+Assert "GET /api/products/{id} -- unknown GUID 404" `
+    (Call "GET" "$BaseUrl/api/products/00000000-0000-0000-0000-000000000000" $OfficerToken) 404
+
+# ============================================================
+Write-Host "`n=== STEP 3: Products — write ===" -ForegroundColor Cyan
+# ============================================================
+
+$newProduct = @{
+    name="Aspirin 500mg"; din="00000001"; npn=$null
+    medicinalIngredient="Acetylsalicylic Acid"; manufacturer="Test Corp"
+    dosageForm="Tablet"; routeOfAdministration="Oral"; therapeuticCategory="Analgesic"
+}
+Assert "POST /api/products -- officer 201" (Call "POST" "$BaseUrl/api/products" $OfficerToken $newProduct) 201
+Assert "POST /api/products -- viewer 403"  (Call "POST" "$BaseUrl/api/products" $ViewerToken $newProduct) 403
+
+$updProduct = @{
+    name="Atorvastatin 40mg"; din="02241127"; npn=$null
+    medicinalIngredient="Atorvastatin Calcium"; manufacturer="Apotex Inc."
+    dosageForm="Tablet"; routeOfAdministration="Oral"; therapeuticCategory="Antihyperlipidemic"
+}
+Assert "PUT /api/products/{id} -- officer 200" `
+    (Call "PUT" "$BaseUrl/api/products/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb" $OfficerToken $updProduct) 200
+Assert "PUT /api/products/{id} -- viewer 403" `
+    (Call "PUT" "$BaseUrl/api/products/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb" $ViewerToken $updProduct) 403
+
+Assert "PATCH /api/products/{id}/archive -- viewer 403" `
+    (Call "PATCH" "$BaseUrl/api/products/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/archive" $ViewerToken) 403
+Assert "PATCH /api/products/{id}/archive -- officer 204" `
+    (Call "PATCH" "$BaseUrl/api/products/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/archive" $OfficerToken) 204
+Assert "PATCH /api/products/{id}/archive -- already archived 404" `
+    (Call "PATCH" "$BaseUrl/api/products/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/archive" $OfficerToken) 404
+
+# ============================================================
+Write-Host "`n=== STEP 4: Documents — read ===" -ForegroundColor Cyan
+# ============================================================
+
+Assert "GET /api/documents -- officer 200" (Call "GET" "$BaseUrl/api/documents" $OfficerToken) 200
+Assert "GET /api/documents -- viewer 200"  (Call "GET" "$BaseUrl/api/documents" $ViewerToken) 200
+Assert "GET /api/documents -- unauth 401"  (Call "GET" "$BaseUrl/api/documents") 401
+Assert "GET /api/documents/by-product/{id} -- officer 200" `
+    (Call "GET" "$BaseUrl/api/documents/by-product/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa" $OfficerToken) 200
+Assert "GET /api/documents/by-product/{id} -- viewer 200" `
+    (Call "GET" "$BaseUrl/api/documents/by-product/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa" $ViewerToken) 200
+Assert "GET /api/documents/{id} -- officer 200" `
+    (Call "GET" "$BaseUrl/api/documents/cccccccc-cccc-cccc-cccc-cccccccccccc" $OfficerToken) 200
+
+# ============================================================
+Write-Host "`n=== STEP 5: Documents — write ===" -ForegroundColor Cyan
+# ============================================================
+
+$newDoc = @{
+    title="Test CoA v1.0"; type="CertificateOfAnalysis"; status="Draft"
+    version="1.0"; date="2026-06-24"; notes="Test via PS1"
+    productId="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+}
+Assert "POST /api/documents -- officer 201" (Call "POST" "$BaseUrl/api/documents" $OfficerToken $newDoc) 201
+Assert "POST /api/documents -- viewer 403"  (Call "POST" "$BaseUrl/api/documents" $ViewerToken $newDoc) 403
+
+$updDoc = @{
+    title="CoA v1.1"; type="CertificateOfAnalysis"; status="Approved"
+    version="1.1"; date="2026-06-24"; notes="Updated"
+}
+Assert "PUT /api/documents/{id} -- officer 200" `
+    (Call "PUT" "$BaseUrl/api/documents/cccccccc-cccc-cccc-cccc-cccccccccccc" $OfficerToken $updDoc) 200
+Assert "PUT /api/documents/{id} -- viewer 403" `
+    (Call "PUT" "$BaseUrl/api/documents/cccccccc-cccc-cccc-cccc-cccccccccccc" $ViewerToken $updDoc) 403
+
+Assert "PATCH /api/documents/{id}/archive -- viewer 403" `
+    (Call "PATCH" "$BaseUrl/api/documents/cccccccc-cccc-cccc-cccc-cccccccccccc/archive" $ViewerToken) 403
+Assert "PATCH /api/documents/{id}/archive -- officer 204" `
+    (Call "PATCH" "$BaseUrl/api/documents/cccccccc-cccc-cccc-cccc-cccccccccccc/archive" $OfficerToken) 204
+
+# ============================================================
+Write-Host "`n=== STEP 6: Submission Packages — read ===" -ForegroundColor Cyan
+# ============================================================
+
+Assert "GET /api/submissionpackages -- officer 200" `
+    (Call "GET" "$BaseUrl/api/submissionpackages" $OfficerToken) 200
+Assert "GET /api/submissionpackages -- viewer 200" `
+    (Call "GET" "$BaseUrl/api/submissionpackages" $ViewerToken) 200
+Assert "GET /api/submissionpackages -- unauth 401" `
+    (Call "GET" "$BaseUrl/api/submissionpackages") 401
+Assert "GET /api/submissionpackages/{id} -- officer 200" `
+    (Call "GET" "$BaseUrl/api/submissionpackages/eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee" $OfficerToken) 200
+Assert "GET /api/submissionpackages/{id} -- viewer 200" `
+    (Call "GET" "$BaseUrl/api/submissionpackages/eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee" $ViewerToken) 200
+Assert "GET /api/submissionpackages/by-product/{id} -- officer 200" `
+    (Call "GET" "$BaseUrl/api/submissionpackages/by-product/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa" $OfficerToken) 200
+
+# ============================================================
+Write-Host "`n=== STEP 7: Submission Packages — write ===" -ForegroundColor Cyan
+# ============================================================
+
+$newPkg = @{
+    submissionType="NDS"; regulatoryBody="Health Canada"
+    productId="bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"; targetDate="2026-12-31"
+}
+Assert "POST /api/submissionpackages -- officer 201" `
+    (Call "POST" "$BaseUrl/api/submissionpackages" $OfficerToken $newPkg) 201
+Assert "POST /api/submissionpackages -- viewer 403" `
+    (Call "POST" "$BaseUrl/api/submissionpackages" $ViewerToken $newPkg) 403
+
+$updPkg = @{ regulatoryBody="Health Canada"; targetDate="2027-03-01"; submissionDate=$null }
+Assert "PUT /api/submissionpackages/{id} -- officer 200" `
+    (Call "PUT" "$BaseUrl/api/submissionpackages/eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee" $OfficerToken $updPkg) 200
+Assert "PUT /api/submissionpackages/{id} -- viewer 403" `
+    (Call "PUT" "$BaseUrl/api/submissionpackages/eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee" $ViewerToken $updPkg) 403
+
+$statusUpd = @{ newStatus="InProgress"; notes="Work begun" }
+Assert "PATCH /api/submissionpackages/{id}/status -- officer 200" `
+    (Call "PATCH" "$BaseUrl/api/submissionpackages/eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee/status" $OfficerToken $statusUpd) 200
+Assert "PATCH /api/submissionpackages/{id}/status -- viewer 403" `
+    (Call "PATCH" "$BaseUrl/api/submissionpackages/eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee/status" $ViewerToken $statusUpd) 403
+
+# Archive: seeded package is now InProgress (from status patch above) so 204 expected
+Assert "PATCH /api/submissionpackages/{id}/archive -- viewer 403" `
+    (Call "PATCH" "$BaseUrl/api/submissionpackages/eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee/archive" $ViewerToken) 403
+Assert "PATCH /api/submissionpackages/{id}/archive -- officer (InProgress) 204" `
+    (Call "PATCH" "$BaseUrl/api/submissionpackages/eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee/archive" $OfficerToken) 204
+
+# ============================================================
+Write-Host "`n=== STEP 8: Audit Logs ===" -ForegroundColor Cyan
+# ============================================================
+
+# Valid entityType — both roles
+Assert "GET /api/auditlogs?entityType=Product -- officer 200" `
+    (Call "GET" "$BaseUrl/api/auditlogs?entityType=Product" $OfficerToken) 200
+Assert "GET /api/auditlogs?entityType=Product -- viewer 200" `
+    (Call "GET" "$BaseUrl/api/auditlogs?entityType=Product" $ViewerToken) 200
+Assert "GET /api/auditlogs?entityType=Product -- unauth 401" `
+    (Call "GET" "$BaseUrl/api/auditlogs?entityType=Product") 401
+
+Assert "GET /api/auditlogs?entityType=DocumentRecord -- officer 200" `
+    (Call "GET" "$BaseUrl/api/auditlogs?entityType=DocumentRecord" $OfficerToken) 200
+Assert "GET /api/auditlogs?entityType=SubmissionPackage -- officer 200" `
+    (Call "GET" "$BaseUrl/api/auditlogs?entityType=SubmissionPackage" $OfficerToken) 200
+
+# Valid entityType + entityId
+Assert "GET /api/auditlogs?entityType=Product&entityId={id} -- 200" `
+    (Call "GET" "$BaseUrl/api/auditlogs?entityType=Product&entityId=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa" $OfficerToken) 200
+Assert "GET /api/auditlogs?entityType=DocumentRecord&entityId={id} -- 200" `
+    (Call "GET" "$BaseUrl/api/auditlogs?entityType=DocumentRecord&entityId=cccccccc-cccc-cccc-cccc-cccccccccccc" $OfficerToken) 200
+Assert "GET /api/auditlogs?entityType=SubmissionPackage&entityId={id} -- 200" `
+    (Call "GET" "$BaseUrl/api/auditlogs?entityType=SubmissionPackage&entityId=eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee" $OfficerToken) 200
+
+# Unknown entityId — valid request, empty result
+Assert "GET /api/auditlogs?entityType=Product&entityId=unknown -- 200 empty" `
+    (Call "GET" "$BaseUrl/api/auditlogs?entityType=Product&entityId=99999999-9999-9999-9999-999999999999" $OfficerToken) 200
+
+# Invalid entityType — expect 400
+Assert "GET /api/auditlogs?entityType=Invalid -- 400" `
+    (Call "GET" "$BaseUrl/api/auditlogs?entityType=Invalid" $OfficerToken) 400
+
+# Missing entityType — expect 400
+Assert "GET /api/auditlogs (no entityType) -- 400" `
+    (Call "GET" "$BaseUrl/api/auditlogs" $OfficerToken) 400
+
+# ============================================================
+Write-Host "`n============================================================" -ForegroundColor Cyan
+Write-Host "  Results: $Pass passed, $Fail failed" `
+    -ForegroundColor $(if ($Fail -eq 0) { "Green" } else { "Yellow" })
+Write-Host "============================================================`n" -ForegroundColor Cyan

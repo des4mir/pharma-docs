@@ -1,233 +1,251 @@
-# PharmaDocs API - Testing Guide
+# PharmaDocs API Testing Guide
 
-## Quick Start
+**Base URL:** `http://localhost:5046`  
+**Version:** 0.9.0  
+**Last updated:** 2026-06-24
 
-### 1. Start the API
+---
 
-```powershell
-cd PharmaDocs.API
-dotnet run
-# API will be available at: http://localhost:5046
+## Seeded Test Data
+
+### Users
+
+| Email               | Password  | Role              |
+| ------------------- | --------- | ----------------- |
+| sarah@pharmadocs.ca | Demo1234! | RegAffairsOfficer |
+| james@pharmadocs.ca | Demo1234! | Viewer            |
+
+### Seeded GUIDs
+
+| Entity                                | ID                                     |
+| ------------------------------------- | -------------------------------------- |
+| Product — Atorvastatin 20mg           | `aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa` |
+| Product — Metformin 500mg             | `bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb` |
+| Document — Atorvastatin Product Monograph | `cccccccc-cccc-cccc-cccc-cccccccccccc` |
+| Submission Package — NDS Atorvastatin | `eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee` |
+
+---
+
+## Endpoints Reference
+
+### Auth
+
+| Method | Route             | Auth | Notes             |
+| ------ | ----------------- | ---- | ----------------- |
+| POST   | `/api/auth/login` | None | Returns JWT token |
+
+**Request body:**
+
+```json
+{ "email": "sarah@pharmadocs.ca", "password": "Demo1234!" }
 ```
 
-### 2. Determine the Seeded Password
+**Success response (200):**
 
-The database contains two test users with the same password hash:
-
-- **Hash**: `$2a$11$gC76SgMbnnNGOHdy6WKR/uaAL2ZkBonnlNbdr5M/bLYCb8C1NTGBu`
-
-- **Test passwords: `Demo1234!`**
-
-### 3. Run the Test Script
-
-```powershell
-# Navigate to backend directory
-cd path/to/pharma-docs/backend
-
-# Run the PowerShell test script
-.\test-api.ps1
+```json
+{
+  "token": "<jwt>",
+  "fullName": "Sarah Leblanc",
+  "email": "sarah@pharmadocs.ca",
+  "role": "RegAffairsOfficer",
+  "expiresAt": "..."
+}
 ```
 
-## Test Users
-
-### User 1: RegAffairsOfficer (Has write permissions)
-
-- **Email**: `sarah@pharmadocs.ca`
-- **Full Name**: Sarah Leblanc
-- **ID**: `11111111-1111-1111-1111-111111111111`
-- **Role**: RegAffairsOfficer
-- **Permissions**: Can READ, CREATE, UPDATE, DELETE products and documents
-
-### User 2: Viewer (Read-only)
-
-- **Email**: `james@pharmadocs.ca`
-- **Full Name**: James Okafor
-- **ID**: `22222222-2222-2222-2222-222222222222`
-- **Role**: Viewer
-- **Permissions**: Can only READ products and documents (no create/update/delete)
-
-## API Endpoints
-
-### Authentication
-
-- `POST /api/auth/login` - Login and get JWT token
-  - **Access**: Public (no auth required)
-  - **Required fields**: `email`, `password`
-  - **Returns**: Token, user info, expiration time
-
-### Products (All require authentication)
-
-- `GET /api/products` - List all products
-  - **Access**: Both roles
-- `GET /api/products/{id}` - Get single product
-  - **Access**: Both roles
-- `POST /api/products` - Create product
-  - **Access**: RegAffairsOfficer only (403 Forbidden for Viewer)
-- `PUT /api/products/{id}` - Update product
-  - **Access**: RegAffairsOfficer only (403 Forbidden for Viewer)
-- `DELETE /api/products/{id}` - Delete product
-  - **Access**: RegAffairsOfficer only (403 Forbidden for Viewer)
-
-### Documents (All require authentication)
-
-- `GET /api/documents` - List all documents
-  - **Access**: Both roles
-- `GET /api/documents/by-product/{productId}` - Get documents for a product
-  - **Access**: Both roles
-- `GET /api/documents/{id}` - Get single document
-  - **Access**: Both roles
-- `POST /api/documents` - Create document
-  - **Access**: RegAffairsOfficer only (403 Forbidden for Viewer)
-- `PUT /api/documents/{id}` - Update document
-  - **Access**: RegAffairsOfficer only (403 Forbidden for Viewer)
-- `DELETE /api/documents/{id}` - Delete document
-  - **Access**: RegAffairsOfficer only (403 Forbidden for Viewer)
-
-## Testing Methods
-
-### Option 1: PowerShell Script (Recommended)
-
-```powershell
-.\test-api.ps1
-```
-
-- Automated testing of all endpoints
-- Tests both user roles
-- Shows success/failure for each endpoint
-- Tests role-based access control
-- Tests unauthenticated access
-
-### Option 2: curl Commands
-
-See `curl-commands.txt` for manual curl commands.
-
-Example login:
-
-```bash
-curl -X POST http://localhost:5046/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"sarah@pharmadocs.ca","password":"PASSWORD_HERE"}'
-```
-
-Then save the token and use it for subsequent requests:
-
-```bash
-curl -X GET http://localhost:5046/api/products \
-  -H "Authorization: Bearer YOUR_TOKEN_HERE"
-```
-
-### Option 3: Swagger UI
-
-Visit: http://localhost:5046/swagger
-
-- Interactive API documentation
-- Can test endpoints directly from browser
-- Click "Authorize" button to add JWT token
-
-## Seeded Data
+---
 
 ### Products
 
-1. **Atorvastatin 20mg Tablet**
-   - ID: `aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa`
-   - DIN: 02245276
-   - Manufacturer: Apotex Inc.
+| Method | Route                        | Auth     | Role              |
+| ------ | ---------------------------- | -------- | ----------------- |
+| GET    | `/api/products`              | Required | Both              |
+| GET    | `/api/products/{id}`         | Required | Both              |
+| POST   | `/api/products`              | Required | RegAffairsOfficer |
+| PUT    | `/api/products/{id}`         | Required | RegAffairsOfficer |
+| PATCH  | `/api/products/{id}/archive` | Required | RegAffairsOfficer |
 
-2. **Metformin 500mg Tablet**
-   - ID: `bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb`
-   - DIN: 02162512
-   - Manufacturer: Teva Canada
+- `GET` returns only non-archived products, ordered by name
+- `GET /{id}` returns `404` if the product does not exist or is archived
+- Archive returns `204 No Content`; returns `404` if already archived
+
+---
 
 ### Documents
 
-1. **Atorvastatin Product Monograph v1.0**
-   - ID: `cccccccc-cccc-cccc-cccc-cccccccccccc`
-   - Status: Final
-   - Type: ProductMonograph
+| Method | Route                                   | Auth     | Role              |
+| ------ | --------------------------------------- | -------- | ----------------- |
+| GET    | `/api/documents`                        | Required | Both              |
+| GET    | `/api/documents/{id}`                   | Required | Both              |
+| GET    | `/api/documents/by-product/{productId}` | Required | Both              |
+| POST   | `/api/documents`                        | Required | RegAffairsOfficer |
+| PUT    | `/api/documents/{id}`                   | Required | RegAffairsOfficer |
+| PATCH  | `/api/documents/{id}/archive`           | Required | RegAffairsOfficer |
 
-2. **Metformin Certificate of Analysis v1.0**
-   - ID: `dddddddd-dddd-dddd-dddd-dddddddddddd`
-   - Status: Draft
-   - Type: CertificateOfAnalysis
+- `GET` variants return only non-archived documents
+- `POST` body must include `status` field (e.g. `"Draft"`)
+- Archive returns `204 No Content`; returns `404` if already archived
+
+---
+
+### Submission Packages
+
+| Method | Route                                            | Auth     | Role              |
+| ------ | ------------------------------------------------ | -------- | ----------------- |
+| GET    | `/api/submissionpackages`                        | Required | Both              |
+| GET    | `/api/submissionpackages/{id}`                   | Required | Both              |
+| GET    | `/api/submissionpackages/by-product/{productId}` | Required | Both              |
+| POST   | `/api/submissionpackages`                        | Required | RegAffairsOfficer |
+| PUT    | `/api/submissionpackages/{id}`                   | Required | RegAffairsOfficer |
+| PATCH  | `/api/submissionpackages/{id}/status`            | Required | RegAffairsOfficer |
+| PATCH  | `/api/submissionpackages/{id}/archive`           | Required | RegAffairsOfficer |
+
+- `GET` variants return only non-archived packages
+- `PATCH /status` updates status and writes an audit log entry; returns updated package (`200`)
+- `PATCH /archive` is blocked if status is `Submitted` or `UnderReview` — returns `400 Bad Request`
+
+---
+
+### Audit Logs
+
+| Method | Route                                            | Auth     | Role |
+| ------ | ------------------------------------------------ | -------- | ---- |
+| GET    | `/api/auditlogs?entityType={type}`               | Required | Both |
+| GET    | `/api/auditlogs?entityType={type}&entityId={id}` | Required | Both |
+
+- `entityType` is **required**. Valid values: `Product`, `DocumentRecord`, `SubmissionPackage`
+- Omitting `entityType` or passing an invalid value returns `400 Bad Request`
+- `entityId` is optional — narrows results to a specific entity within the given type
+- Unknown `entityId` with a valid `entityType` returns `200 OK` with an empty array `[]`
+- Results ordered by `timestamp` descending
+
+**Example calls:**
+
+```
+GET /api/auditlogs?entityType=Product
+GET /api/auditlogs?entityType=Product&entityId=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
+GET /api/auditlogs?entityType=DocumentRecord
+GET /api/auditlogs?entityType=DocumentRecord&entityId=cccccccc-cccc-cccc-cccc-cccccccccccc
+GET /api/auditlogs?entityType=SubmissionPackage
+GET /api/auditlogs?entityType=SubmissionPackage&entityId=eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee
+```
+
+---
+
+## Role-Based Access Summary
+
+| Action                                | RegAffairsOfficer | Viewer |
+| ------------------------------------- | ----------------- | ------ |
+| `POST /api/auth/login`                | ✅                | ✅     |
+| `GET` any resource                    | ✅                | ✅     |
+| `GET /api/auditlogs`                  | ✅                | ✅     |
+| `POST` / `PUT` / `PATCH` any resource | ✅                | ❌ 403 |
+| `PATCH /{id}/archive`                 | ✅                | ❌ 403 |
+
+---
 
 ## Expected Test Results
 
-### RegAffairsOfficer (sarah@pharmadocs.ca)
+### Step 1 — Login
 
-```
-✓ Login: 200 OK
-✓ GET /api/products: 200 OK
-✓ GET /api/products/{id}: 200 OK
-✓ POST /api/products: 201 Created
-✓ PUT /api/products/{id}: 200 OK
-✓ DELETE /api/products/{id}: 200 OK (or 204 No Content)
-✓ GET /api/documents: 200 OK
-✓ GET /api/documents/by-product/{id}: 200 OK
-✓ GET /api/documents/{id}: 200 OK
-✓ POST /api/documents: 201 Created
-✓ PUT /api/documents/{id}: 200 OK
-✓ DELETE /api/documents/{id}: 200 OK (or 204 No Content)
-```
+| Scenario                        | Expected           |
+| ------------------------------- | ------------------ |
+| sarah@pharmadocs.ca / Demo1234! | 200 OK + JWT token |
+| james@pharmadocs.ca / Demo1234! | 200 OK + JWT token |
+| Wrong credentials               | 401 Unauthorized   |
 
-### Viewer (james@pharmadocs.ca)
+### Step 2 — GET Products
 
-```
-✓ Login: 200 OK
-✓ GET /api/products: 200 OK
-✓ GET /api/products/{id}: 200 OK
-✗ POST /api/products: 403 Forbidden
-✗ PUT /api/products/{id}: 403 Forbidden
-✗ DELETE /api/products/{id}: 403 Forbidden
-✓ GET /api/documents: 200 OK
-✓ GET /api/documents/by-product/{id}: 200 OK
-✓ GET /api/documents/{id}: 200 OK
-✗ POST /api/documents: 403 Forbidden
-✗ PUT /api/documents/{id}: 403 Forbidden
-✗ DELETE /api/documents/{id}: 403 Forbidden
-```
+- Both roles → `200 OK`, array containing Atorvastatin 20mg and Metformin 500mg
+- Each product includes `createdByName` field
+- Unauthenticated → `401`
 
-### Unauthenticated
+### Step 3 — GET Single Product
 
-```
-✗ GET /api/products: 401 Unauthorized
-✗ GET /api/documents: 401 Unauthorized
-```
+- Both roles → `200 OK` with `createdByName`
+- Unknown ID → `404`
+
+### Step 4 — POST Product
+
+- RegAffairsOfficer → `201 Created`
+- Viewer → `403 Forbidden`
+
+### Step 5 — PUT Product
+
+- RegAffairsOfficer → `200 OK`
+- Viewer → `403 Forbidden`
+
+### Step 6 — PATCH Product Archive
+
+- RegAffairsOfficer → `204 No Content`
+- Viewer → `403 Forbidden`
+- Archiving already-archived product → `404`
+
+### Step 7 — GET Documents
+
+- Both roles → `200 OK`, includes `createdByName`
+- Unauthenticated → `401`
+
+### Step 8 — GET Documents by Product
+
+- Both roles → `200 OK`, scoped to product
+
+### Step 9 — POST Document
+
+- RegAffairsOfficer → `201 Created` (must include `status` in body)
+- Viewer → `403 Forbidden`
+
+### Step 10 — PATCH Document Archive
+
+- RegAffairsOfficer → `204 No Content`
+- Viewer → `403 Forbidden`
+
+### Step 11 — GET Submission Packages
+
+- Both roles → `200 OK`
+- Unauthenticated → `401`
+
+### Step 12 — POST Submission Package
+
+- RegAffairsOfficer → `201 Created`
+- Viewer → `403 Forbidden`
+
+### Step 13 — PATCH Submission Package Status
+
+- RegAffairsOfficer → `200 OK` with updated package
+- Viewer → `403 Forbidden`
+
+### Step 14 — PATCH Submission Package Archive
+
+- RegAffairsOfficer on `Draft`/`InProgress` package → `204 No Content`
+- RegAffairsOfficer on `Submitted`/`UnderReview` package → `400 Bad Request`
+- Viewer → `403 Forbidden`
+
+### Step 15 — GET Audit Logs (entityType only)
+
+- Both roles → `200 OK`, array of entries
+- Unauthenticated → `401`
+
+### Step 16 — GET Audit Logs (entityType + entityId)
+
+- Both roles → `200 OK`, entries scoped to that entity
+
+### Step 17 — GET Audit Logs (missing or invalid entityType)
+
+- → `400 Bad Request`
+
+### Step 18 — GET Audit Logs (valid entityType, unknown entityId)
+
+- → `200 OK`, empty array `[]`
+
+---
 
 ## Troubleshooting
 
-### Login fails with "Invalid email or password"
-
-- Double-check the password you're using
-- Ensure the user email is exactly: `sarah@pharmadocs.ca` or `james@pharmadocs.ca`
-- The password hash suggests it might be a common test password
-
-### 401 Unauthorized on authenticated endpoints
-
-- Ensure you're including the Authorization header: `Authorization: Bearer YOUR_TOKEN_HERE`
-- Ensure the token hasn't expired
-- Ensure the token is from the login response, not the user ID
-
-### 403 Forbidden on POST/PUT/DELETE endpoints
-
-- This is expected if you're using the "Viewer" role
-- Use the "RegAffairsOfficer" (sarah@pharmadocs.ca) account to test write operations
-- Different roles have different permissions by design
-
-### Connection refused
-
-- Ensure the API is running: `cd PharmaDocs.API && dotnet run`
-- Check that the API is listening on port 5046
-- The launchSettings.json shows it should run on http://localhost:5046
-
-## Password Reset (if needed)
-
-If you forget the password, you can reset it in the database:
-
-1. Open `PharmaDocsDbContext.cs`
-2. Find the `SeedPasswordHash` constant
-3. Generate a new BCrypt hash using:
-   ```csharp
-   var hashedPassword = BCrypt.Net.BCrypt.HashPassword("YourNewPassword");
-   ```
-4. Update both the seeding constant and the migration files
-5. Run: `dotnet ef database update`
+| Symptom                             | Likely Cause                                                                         |
+| ----------------------------------- | ------------------------------------------------------------------------------------ |
+| `401` on all requests               | Token missing or expired in `Authorization: Bearer` header                           |
+| `403` on write operations           | Logged in as Viewer — use sarah@pharmadocs.ca                                        |
+| `404` on product or document        | Resource is archived or GUID is wrong                                                |
+| `400` on audit log request          | `entityType` missing or not one of: `Product`, `DocumentRecord`, `SubmissionPackage` |
+| `400` on submission package archive | Status is `Submitted` or `UnderReview`                                               |
+| Empty `[]` from audit log           | Valid — no audit entries exist yet for that entity                                   |

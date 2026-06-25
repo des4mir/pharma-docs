@@ -17,7 +17,7 @@ public class PharmaDocsDbContext : DbContext
     public DbSet<SubmissionDocument> SubmissionDocuments => Set<SubmissionDocument>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
-    // Bcrypt hash for seed users; password is "TestPassword123!" hashed with bcrypt (11 rounds)
+    // Bcrypt hash for seed users; password is "Demo1234!" hashed with bcrypt (11 rounds)
     private const string SeedPasswordHash = "$2a$11$gC76SgMbnnNGOHdy6WKR/uaAL2ZkBonnlNbdr5M/bLYCb8C1NTGBu";
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
