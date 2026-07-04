@@ -238,6 +238,41 @@ public class SubmissionPackagesController : ControllerBase
         return NoContent();
     }
 
+    /// <summary>Unarchive a submission package (restore soft-deleted item). Requires RegAffairsOfficer role.</summary>
+    [HttpPatch("{id:guid}/unarchive")]
+    [Authorize(Roles = "RegAffairsOfficer")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Unarchive(Guid id)
+    {
+        var package = await _context.SubmissionPackages.FindAsync(id);
+        if (package is null || !package.IsArchived) return NotFound();
+
+        var actorId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var actorName = User.FindFirstValue(ClaimTypes.Name) ?? "Unknown";
+
+        package.IsArchived = false;
+        package.ArchivedAt = null;
+        package.ArchivedById = null;
+
+        _context.AuditLogs.Add(new AuditLog
+        {
+            Id = Guid.NewGuid(),
+            EntityType = "SubmissionPackage",
+            EntityId = package.Id,
+            Action = "Unarchived",
+            NewValues = $"{{\"Status\":\"{package.Status}\"}}",
+            ChangedById = actorId,
+            ChangedByName = actorName,
+            Timestamp = DateTime.UtcNow
+        });
+
+        await _context.SaveChangesAsync();
+        return NoContent();
+    }
+
     private static SubmissionPackageResponseDto ToDto(SubmissionPackage s) => new()
     {
         Id = s.Id,

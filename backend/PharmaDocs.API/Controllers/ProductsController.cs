@@ -175,6 +175,41 @@ public class ProductsController : ControllerBase
         return NoContent();
     }
 
+    /// <summary>Unarchive a product (restore soft-deleted item). Requires RegAffairsOfficer role.</summary>
+    [HttpPatch("{id:guid}/unarchive")]
+    [Authorize(Roles = "RegAffairsOfficer")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Unarchive(Guid id)
+    {
+        var product = await _context.Products.FindAsync(id);
+        if (product is null || !product.IsArchived) return NotFound();
+
+        var actorId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var actorName = User.FindFirstValue(ClaimTypes.Name) ?? "Unknown";
+
+        product.IsArchived = false;
+        product.ArchivedAt = null;
+        product.ArchivedById = null;
+
+        _context.AuditLogs.Add(new AuditLog
+        {
+            Id = Guid.NewGuid(),
+            EntityType = "Product",
+            EntityId = product.Id,
+            Action = "Unarchived",
+            NewValues = $"{{\"Name\":\"{product.Name}\"}}",
+            ChangedById = actorId,
+            ChangedByName = actorName,
+            Timestamp = DateTime.UtcNow
+        });
+
+        await _context.SaveChangesAsync();
+        return NoContent();
+    }
+
     private static ProductResponseDto ToDto(Product p) => new()
     {
         Id = p.Id,

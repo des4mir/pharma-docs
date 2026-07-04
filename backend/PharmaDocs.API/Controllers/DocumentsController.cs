@@ -186,6 +186,41 @@ public class DocumentsController : ControllerBase
         return NoContent();
     }
 
+    /// <summary>Unarchive a document (restore soft-deleted item). Requires RegAffairsOfficer role.</summary>
+    [HttpPatch("{id:guid}/unarchive")]
+    [Authorize(Roles = "RegAffairsOfficer")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Unarchive(Guid id)
+    {
+        var doc = await _context.DocumentRecords.FindAsync(id);
+        if (doc is null || !doc.IsArchived) return NotFound();
+
+        var actorId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var actorName = User.FindFirstValue(ClaimTypes.Name) ?? "Unknown";
+
+        doc.IsArchived = false;
+        doc.ArchivedAt = null;
+        doc.ArchivedById = null;
+
+        _context.AuditLogs.Add(new AuditLog
+        {
+            Id = Guid.NewGuid(),
+            EntityType = "DocumentRecord",
+            EntityId = doc.Id,
+            Action = "Unarchived",
+            NewValues = $"{{\"Title\":\"{doc.Title}\",\"Status\":\"{doc.Status}\"}}",
+            ChangedById = actorId,
+            ChangedByName = actorName,
+            Timestamp = DateTime.UtcNow
+        });
+
+        await _context.SaveChangesAsync();
+        return NoContent();
+    }
+
     private static DocumentResponseDto ToDto(DocumentRecord d) => new()
     {
         Id = d.Id,
