@@ -1,8 +1,8 @@
 # PharmaDocs API Testing Guide
 
 **Base URL:** `http://localhost:5046`  
-**Version:** 0.9.0  
-**Last updated:** 2026-06-24
+**Version:** 0.10.0  
+**Last updated:** 2026-07-04
 
 ---
 
@@ -17,12 +17,12 @@
 
 ### Seeded GUIDs
 
-| Entity                                | ID                                     |
-| ------------------------------------- | -------------------------------------- |
-| Product — Atorvastatin 20mg           | `aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa` |
-| Product — Metformin 500mg             | `bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb` |
+| Entity                                    | ID                                     |
+| ----------------------------------------- | -------------------------------------- |
+| Product — Atorvastatin 20mg               | `aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa` |
+| Product — Metformin 500mg                 | `bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb` |
 | Document — Atorvastatin Product Monograph | `cccccccc-cccc-cccc-cccc-cccccccccccc` |
-| Submission Package — NDS Atorvastatin | `eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee` |
+| Submission Package — NDS Atorvastatin     | `eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee` |
 
 ---
 
@@ -56,17 +56,19 @@
 
 ### Products
 
-| Method | Route                        | Auth     | Role              |
-| ------ | ---------------------------- | -------- | ----------------- |
-| GET    | `/api/products`              | Required | Both              |
-| GET    | `/api/products/{id}`         | Required | Both              |
-| POST   | `/api/products`              | Required | RegAffairsOfficer |
-| PUT    | `/api/products/{id}`         | Required | RegAffairsOfficer |
-| PATCH  | `/api/products/{id}/archive` | Required | RegAffairsOfficer |
+| Method | Route                          | Auth     | Role              |
+| ------ | ------------------------------ | -------- | ----------------- |
+| GET    | `/api/products`                | Required | Both              |
+| GET    | `/api/products/{id}`           | Required | Both              |
+| POST   | `/api/products`                | Required | RegAffairsOfficer |
+| PUT    | `/api/products/{id}`           | Required | RegAffairsOfficer |
+| PATCH  | `/api/products/{id}/archive`   | Required | RegAffairsOfficer |
+| PATCH  | `/api/products/{id}/unarchive` | Required | RegAffairsOfficer |
 
 - `GET` returns only non-archived products, ordered by name
 - `GET /{id}` returns `404` if the product does not exist or is archived
 - Archive returns `204 No Content`; returns `404` if already archived
+- Unarchive returns `204 No Content`; returns `404` if the product does not exist or is not archived
 
 ---
 
@@ -80,10 +82,12 @@
 | POST   | `/api/documents`                        | Required | RegAffairsOfficer |
 | PUT    | `/api/documents/{id}`                   | Required | RegAffairsOfficer |
 | PATCH  | `/api/documents/{id}/archive`           | Required | RegAffairsOfficer |
+| PATCH  | `/api/documents/{id}/unarchive`         | Required | RegAffairsOfficer |
 
 - `GET` variants return only non-archived documents
 - `POST` body must include `status` field (e.g. `"Draft"`)
 - Archive returns `204 No Content`; returns `404` if already archived
+- Unarchive returns `204 No Content`; returns `404` if the document does not exist or is not archived
 
 ---
 
@@ -98,10 +102,12 @@
 | PUT    | `/api/submissionpackages/{id}`                   | Required | RegAffairsOfficer |
 | PATCH  | `/api/submissionpackages/{id}/status`            | Required | RegAffairsOfficer |
 | PATCH  | `/api/submissionpackages/{id}/archive`           | Required | RegAffairsOfficer |
+| PATCH  | `/api/submissionpackages/{id}/unarchive`         | Required | RegAffairsOfficer |
 
 - `GET` variants return only non-archived packages
 - `PATCH /status` updates status and writes an audit log entry; returns updated package (`200`)
 - `PATCH /archive` is blocked if status is `Submitted` or `UnderReview` — returns `400 Bad Request`
+- `PATCH /unarchive` returns `204 No Content`; returns `404` if the package does not exist or is not archived
 
 ---
 
@@ -140,6 +146,7 @@ GET /api/auditlogs?entityType=SubmissionPackage&entityId=eeeeeeee-eeee-eeee-eeee
 | `GET /api/auditlogs`                  | ✅                | ✅     |
 | `POST` / `PUT` / `PATCH` any resource | ✅                | ❌ 403 |
 | `PATCH /{id}/archive`                 | ✅                | ❌ 403 |
+| `PATCH /{id}/unarchive`               | ✅                | ❌ 403 |
 
 ---
 
@@ -153,99 +160,107 @@ GET /api/auditlogs?entityType=SubmissionPackage&entityId=eeeeeeee-eeee-eeee-eeee
 | james@pharmadocs.ca / Demo1234! | 200 OK + JWT token |
 | Wrong credentials               | 401 Unauthorized   |
 
-### Step 2 — GET Products
+### Step 1.5 — Setup Baseline State
 
-- Both roles → `200 OK`, array containing Atorvastatin 20mg and Metformin 500mg
-- Each product includes `createdByName` field
-- Unauthenticated → `401`
+The smoke test calls `PATCH /unarchive` as Sarah for the seeded product, document, and submission package before read/write checks begin.
 
-### Step 3 — GET Single Product
+| Scenario                        | Expected       |
+| ------------------------------- | -------------- |
+| Seeded product unarchive setup  | `204` or `404` |
+| Seeded document unarchive setup | `204` or `404` |
+| Seeded submission package setup | `204` or `404` |
 
-- Both roles → `200 OK` with `createdByName`
-- Unknown ID → `404`
+`204` means the seeded entity was archived and has been restored. `404` is acceptable during setup because the entity may already be active; the API returns `404` when an unarchive target is missing or not currently archived.
 
-### Step 4 — POST Product
+### Step 2 — Products: reads
 
-- RegAffairsOfficer → `201 Created`
-- Viewer → `403 Forbidden`
+- GET all (officer) → `200 OK`, array includes Atorvastatin 20mg and Metformin 500mg with `createdByName`
+- GET all (viewer) → `200 OK`
+- GET all (unauthenticated) → `401`
+- GET `/{id}` (officer) → `200 OK` with `createdByName`
+- GET `/{id}` (viewer) → `200 OK`
+- GET unknown GUID → `404`
 
-### Step 5 — PUT Product
+### Step 3 — Products: writes
 
-- RegAffairsOfficer → `200 OK`
-- Viewer → `403 Forbidden`
+- POST (officer) → `201 Created`
+- POST (viewer) → `403 Forbidden`
+- PUT (officer) → `200 OK`
+- PUT (viewer) → `403 Forbidden`
+- PATCH `/{id}/archive` (viewer) → `403 Forbidden`
+- PATCH `/{id}/archive` (officer) → `204 No Content`
+- PATCH `/{id}/archive` again (already archived) → `404`
 
-### Step 6 — PATCH Product Archive
+### Step 4 — Documents: reads
 
-- RegAffairsOfficer → `204 No Content`
-- Viewer → `403 Forbidden`
-- Archiving already-archived product → `404`
+- GET all (officer) → `200 OK`, includes `createdByName`
+- GET all (viewer) → `200 OK`
+- GET all (unauthenticated) → `401`
+- GET `/by-product/{productId}` (officer) → `200 OK`
+- GET `/by-product/{productId}` (viewer) → `200 OK`
+- GET `/{id}` (officer) → `200 OK`
 
-### Step 7 — GET Documents
+### Step 5 — Documents: writes
 
-- Both roles → `200 OK`, includes `createdByName`
-- Unauthenticated → `401`
+- POST (officer) → `201 Created` (must include `status` in body)
+- POST (viewer) → `403 Forbidden`
+- PUT (officer) → `200 OK`
+- PUT (viewer) → `403 Forbidden`
+- PATCH `/{id}/archive` (viewer) → `403 Forbidden`
+- PATCH `/{id}/archive` (officer) → `204 No Content`
 
-### Step 8 — GET Documents by Product
+### Step 6 — Submission Packages: reads
 
-- Both roles → `200 OK`, scoped to product
+- GET all (officer) → `200 OK`
+- GET all (viewer) → `200 OK`
+- GET all (unauthenticated) → `401`
+- GET `/{id}` (officer) → `200 OK`
+- GET `/{id}` (viewer) → `200 OK`
+- GET `/by-product/{productId}` (officer) → `200 OK`
 
-### Step 9 — POST Document
+### Step 7 — Submission Packages: writes
 
-- RegAffairsOfficer → `201 Created` (must include `status` in body)
-- Viewer → `403 Forbidden`
+- POST (officer) → `201 Created`
+- POST (viewer) → `403 Forbidden`
+- PUT (officer) → `200 OK`
+- PUT (viewer) → `403 Forbidden`
+- PATCH `/{id}/status` (officer) → `200 OK` with updated package body
+- PATCH `/{id}/status` (viewer) → `403 Forbidden`
+- PATCH `/{id}/archive` (viewer) → `403 Forbidden`
+- PATCH `/{id}/archive` (officer, package is `InProgress`) → `204 No Content`
 
-### Step 10 — PATCH Document Archive
+### Step 8 — Audit Logs
 
-- RegAffairsOfficer → `204 No Content`
-- Viewer → `403 Forbidden`
+- GET `?entityType=Product` (officer) → `200 OK`
+- GET `?entityType=Product` (viewer) → `200 OK`
+- GET `?entityType=Product` (unauthenticated) → `401`
+- GET `?entityType=DocumentRecord` (officer) → `200 OK`
+- GET `?entityType=SubmissionPackage` (officer) → `200 OK`
+- GET `?entityType=Product&entityId={id}` → `200 OK`, entries scoped to that product
+- GET `?entityType=DocumentRecord&entityId={id}` → `200 OK`
+- GET `?entityType=SubmissionPackage&entityId={id}` → `200 OK`
+- GET `?entityType=Product&entityId=99999999-...` (unknown) → `200 OK`, empty array `[]`
+- GET `?entityType=Invalid` → `400 Bad Request`
+- GET with no `entityType` → `400 Bad Request`
 
-### Step 11 — GET Submission Packages
+### Step 9 — Cleanup: unarchive seeded entries
 
-- Both roles → `200 OK`
-- Unauthenticated → `401`
+The smoke test archives the seeded product, document, and submission package during earlier write checks, then restores them here and verifies role enforcement.
 
-### Step 12 — POST Submission Package
-
-- RegAffairsOfficer → `201 Created`
-- Viewer → `403 Forbidden`
-
-### Step 13 — PATCH Submission Package Status
-
-- RegAffairsOfficer → `200 OK` with updated package
-- Viewer → `403 Forbidden`
-
-### Step 14 — PATCH Submission Package Archive
-
-- RegAffairsOfficer on `Draft`/`InProgress` package → `204 No Content`
-- RegAffairsOfficer on `Submitted`/`UnderReview` package → `400 Bad Request`
-- Viewer → `403 Forbidden`
-
-### Step 15 — GET Audit Logs (entityType only)
-
-- Both roles → `200 OK`, array of entries
-- Unauthenticated → `401`
-
-### Step 16 — GET Audit Logs (entityType + entityId)
-
-- Both roles → `200 OK`, entries scoped to that entity
-
-### Step 17 — GET Audit Logs (missing or invalid entityType)
-
-- → `400 Bad Request`
-
-### Step 18 — GET Audit Logs (valid entityType, unknown entityId)
-
-- → `200 OK`, empty array `[]`
+- PATCH `/{id}/unarchive` (viewer) on each seeded entity → `403 Forbidden`
+- PATCH `/{id}/unarchive` (officer) on each seeded entity → `204 No Content`
 
 ---
 
 ## Troubleshooting
 
-| Symptom                             | Likely Cause                                                                         |
-| ----------------------------------- | ------------------------------------------------------------------------------------ |
-| `401` on all requests               | Token missing or expired in `Authorization: Bearer` header                           |
-| `403` on write operations           | Logged in as Viewer — use sarah@pharmadocs.ca                                        |
-| `404` on product or document        | Resource is archived or GUID is wrong                                                |
-| `400` on audit log request          | `entityType` missing or not one of: `Product`, `DocumentRecord`, `SubmissionPackage` |
-| `400` on submission package archive | Status is `Submitted` or `UnderReview`                                               |
-| Empty `[]` from audit log           | Valid — no audit entries exist yet for that entity                                   |
+| Symptom                                     | Likely Cause                                                                         |
+| ------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `401` on all requests                       | Token missing or expired in `Authorization: Bearer` header                           |
+| `403` on write operations                   | Logged in as Viewer — use sarah@pharmadocs.ca                                        |
+| `404` on product, document, or package read | Resource is archived or GUID is wrong                                                |
+| `404` on `PATCH /unarchive`                 | Resource does not exist or is already active / not archived                          |
+| Step 1.5 setup returns `404`                | Acceptable baseline behavior; the seeded entity was already active before the test   |
+| `400` on audit log request                  | `entityType` missing or not one of: `Product`, `DocumentRecord`, `SubmissionPackage` |
+| `400` on submission package archive         | Status is `Submitted` or `UnderReview`                                               |
+| Empty `[]` from audit log                   | Valid — no audit entries exist yet for that entity                                   |

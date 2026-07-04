@@ -1,12 +1,13 @@
 # PharmaDocs API — curl Reference
 # Base URL: http://localhost:5046
-# Version: 0.9.0
+# Version: 0.10.0
+# Bash-only note: These examples use shell variables, backslash line continuations, and jq.
 #
 # Controllers and their endpoints:
 #   AuthController                 POST /api/auth/login
-#   ProductsController             GET | GET /{id} | POST | PUT /{id} | PATCH /{id}/archive
-#   DocumentsController            GET | GET /{id} | GET /by-product/{id} | POST | PUT /{id} | PATCH /{id}/archive
-#   SubmissionPackagesController   GET | GET /{id} | GET /by-product/{id} | POST | PUT /{id} | PATCH /{id}/status | PATCH /{id}/archive
+#   ProductsController             GET | GET /{id} | POST | PUT /{id} | PATCH /{id}/archive | PATCH /{id}/unarchive
+#   DocumentsController            GET | GET /{id} | GET /by-product/{id} | POST | PUT /{id} | PATCH /{id}/archive | PATCH /{id}/unarchive
+#   SubmissionPackagesController   GET | GET /{id} | GET /by-product/{id} | POST | PUT /{id} | PATCH /{id}/status | PATCH /{id}/archive | PATCH /{id}/unarchive
 #   AuditLogsController            GET /api/auditlogs?entityType={type}[&entityId={id}]
 
 # ============================================================
@@ -35,6 +36,24 @@ curl -s -X POST http://localhost:5046/api/auth/login \
   -w "\nHTTP %{http_code}\n"
 
 # ============================================================
+# 0.5 SETUP BASELINE STATE — mirrors test-api.ps1 Step 1.5
+# ============================================================
+# These calls restore the seeded entities before read/write checks.
+# Expect 204 if an entity was archived, or 404 if it was already active.
+
+curl -s -X PATCH http://localhost:5046/api/products/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/unarchive \
+  -H "Authorization: Bearer $TOKEN" \
+  -w "\nHTTP %{http_code}\n"
+
+curl -s -X PATCH http://localhost:5046/api/documents/cccccccc-cccc-cccc-cccc-cccccccccccc/unarchive \
+  -H "Authorization: Bearer $TOKEN" \
+  -w "\nHTTP %{http_code}\n"
+
+curl -s -X PATCH http://localhost:5046/api/submissionpackages/eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee/unarchive \
+  -H "Authorization: Bearer $TOKEN" \
+  -w "\nHTTP %{http_code}\n"
+
+# ============================================================
 # 1. PRODUCTS
 # ============================================================
 
@@ -58,14 +77,14 @@ curl -s -X POST http://localhost:5046/api/products \
     "din": "00000001",
     "npn": null,
     "medicinalIngredient": "Acetylsalicylic Acid",
-    "manufacturer": "Test Pharma Ltd",
+    "manufacturer": "Test Corp",
     "dosageForm": "Tablet",
     "routeOfAdministration": "Oral",
     "therapeuticCategory": "Analgesic"
   }' | jq .
 
 # PUT update product (RegAffairsOfficer only)
-curl -s -X PUT http://localhost:5046/api/products/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa \
+curl -s -X PUT http://localhost:5046/api/products/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -80,6 +99,11 @@ curl -s -X PUT http://localhost:5046/api/products/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaa
   }' | jq .
 
 # PATCH archive product (RegAffairsOfficer only) — returns 204
+curl -s -X PATCH http://localhost:5046/api/products/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/archive \
+  -H "Authorization: Bearer $TOKEN" \
+  -w "\nHTTP %{http_code}\n"
+
+# PATCH archive product again — expect 404 because it is already archived
 curl -s -X PATCH http://localhost:5046/api/products/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/archive \
   -H "Authorization: Bearer $TOKEN" \
   -w "\nHTTP %{http_code}\n"
@@ -121,7 +145,7 @@ curl -s -X PUT http://localhost:5046/api/documents/cccccccc-cccc-cccc-cccc-ccccc
   -d '{
     "title": "CoA v1.1",
     "type": "CertificateOfAnalysis",
-    "status": "Approved",
+    "status": "Final",
     "version": "1.1",
     "date": "2026-06-24",
     "notes": "Updated via curl"
@@ -245,8 +269,37 @@ curl -s -X PATCH http://localhost:5046/api/products/aaaaaaaa-aaaa-aaaa-aaaa-aaaa
   -H "Authorization: Bearer $VIEWER_TOKEN" \
   -w "\nHTTP %{http_code}\n"
 
+curl -s -X PATCH http://localhost:5046/api/products/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/unarchive \
+  -H "Authorization: Bearer $VIEWER_TOKEN" \
+  -w "\nHTTP %{http_code}\n"
+
+curl -s -X PATCH http://localhost:5046/api/documents/cccccccc-cccc-cccc-cccc-cccccccccccc/unarchive \
+  -H "Authorization: Bearer $VIEWER_TOKEN" \
+  -w "\nHTTP %{http_code}\n"
+
 curl -s -X PATCH http://localhost:5046/api/submissionpackages/eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee/status \
   -H "Authorization: Bearer $VIEWER_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"newStatus":"InProgress","notes":""}' \
+  -w "\nHTTP %{http_code}\n"
+
+curl -s -X PATCH http://localhost:5046/api/submissionpackages/eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee/unarchive \
+  -H "Authorization: Bearer $VIEWER_TOKEN" \
+  -w "\nHTTP %{http_code}\n"
+
+# ============================================================
+# 6. CLEANUP — unarchive seeded entries (RegAffairsOfficer)
+# ============================================================
+# Mirrors test-api.ps1 cleanup. Expect 204 after the archive checks above.
+
+curl -s -X PATCH http://localhost:5046/api/products/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/unarchive \
+  -H "Authorization: Bearer $TOKEN" \
+  -w "\nHTTP %{http_code}\n"
+
+curl -s -X PATCH http://localhost:5046/api/documents/cccccccc-cccc-cccc-cccc-cccccccccccc/unarchive \
+  -H "Authorization: Bearer $TOKEN" \
+  -w "\nHTTP %{http_code}\n"
+
+curl -s -X PATCH http://localhost:5046/api/submissionpackages/eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee/unarchive \
+  -H "Authorization: Bearer $TOKEN" \
   -w "\nHTTP %{http_code}\n"
