@@ -40,7 +40,7 @@ pharma-docs/
 │       └── Data/
 │           └── PharmaDocsDbContext.cs
 ├── frontend/
-│   └── pharma-docs-web/           ← Next.js 14 App Router application (in progress)
+│   └── pharma-docs-web/           ← Next.js 16 App Router application (in progress)
 │       ├── app/
 │       ├── components/
 │       └── lib/
@@ -65,7 +65,7 @@ pharma-docs/
 
 ### Frontend (in progress)
 
-- **Framework**: Next.js 14, App Router
+- **Framework**: Next.js 16, App Router
 - **Language**: TypeScript (strict mode)
 - **Styling**: Tailwind CSS
 - **State**: React Context + useState (no Redux, no Zustand)

@@ -500,3 +500,10 @@ Thumbs.db
 backend/PharmaDocs.API/appsettings.json
 backend/PharmaDocs.API/appsettings.Development.json
 backend/PharmaDocs.API/appsettings.Local.json
+
+# Frontend
+frontend/pharma-docs-web/.next/
+frontend/pharma-docs-web/out/
+frontend/pharma-docs-web/node_modules/
+frontend/pharma-docs-web/next-env.d.ts
+frontend/pharma-docs-web/.vercel/
