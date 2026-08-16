@@ -53,10 +53,20 @@ public class ProductsController : ControllerBase
     [HttpPost]
     [Authorize(Roles = "RegAffairsOfficer")]
     [ProducesResponseType(typeof(ProductResponseDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Create([FromBody] CreateProductDto dto)
     {
+        // Prevent duplicate active products for the same DIN (e.g. repeated test/form submissions).
+        if (!string.IsNullOrWhiteSpace(dto.DIN))
+        {
+            var dinExists = await _context.Products
+                .AnyAsync(p => !p.IsArchived && p.DIN == dto.DIN);
+            if (dinExists)
+                return BadRequest(new { message = $"An active product with DIN '{dto.DIN}' already exists." });
+        }
+
         var actorId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var actorName = User.FindFirstValue(ClaimTypes.Name) ?? "Unknown";
 
