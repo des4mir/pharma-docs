@@ -1,5 +1,9 @@
+// This file wraps EVERY page in the app. Anything rendered here (like
+// <NavBar />) appears on every route without you repeating it per-page.
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import NavBar from "@/components/NavBar";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,7 +18,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "PharmaDocs",
-  description: "Health Canada–aligned pharmaceutical regulatory document manager",
+  description:
+    "Health Canada–aligned pharmaceutical regulatory document manager",
 };
 
 export default function RootLayout({
@@ -23,11 +28,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html lang="en">
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <NavBar />
+        {children}
+      </body>
     </html>
   );
 }

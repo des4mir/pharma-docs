@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { apiFetch, ApiError, AUTH_COOKIE_NAME } from "@/lib/api";
 import type { AuthResponseDto, LoginDto, SessionUser } from "@/lib/types";
+import { SESSION_COOKIE_NAME } from "@/lib/session";
 
 export async function POST(request: Request) {
   const body = (await request.json()) as Partial<LoginDto>;
@@ -41,6 +42,14 @@ export async function POST(request: Request) {
       email: auth.email,
       role: auth.role,
     };
+
+    cookieStore.set(SESSION_COOKIE_NAME, JSON.stringify(sessionUser), {
+      httpOnly: false, // readable by Server Components via next/headers, and could be read client-side too — contains no secret
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      expires: new Date(auth.expiresAt),
+    });
 
     return NextResponse.json(sessionUser, { status: 200 });
   } catch (error) {
