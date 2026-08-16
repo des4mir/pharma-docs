@@ -50,6 +50,35 @@ export interface AuthResponseDto {
   expiresAt: string;
 }
 
+// Mirrors PharmaDocs.Application.DTOs.ProductResponseDto
+export interface Product {
+  id: string;
+  name: string;
+  din: string | null;
+  npn: string | null;
+  medicinalIngredient: string;
+  manufacturer: string;
+  dosageForm: string;
+  routeOfAdministration: string;
+  therapeuticCategory: string;
+  createdAt: string;
+  createdById: string;
+  createdByName: string;
+  isArchived: boolean;
+}
+
+// Mirrors PharmaDocs.Application.DTOs.CreateProductDto
+export interface CreateProductDto {
+  name: string;
+  din?: string | null;
+  npn?: string | null;
+  medicinalIngredient: string;
+  manufacturer: string;
+  dosageForm: string;
+  routeOfAdministration: string;
+  therapeuticCategory: string;
+}
+
 // The user data exposed to the client after login — never includes the raw JWT.
 export interface SessionUser {
   fullName: string;
