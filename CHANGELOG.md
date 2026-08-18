@@ -9,12 +9,68 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Planned
 
-- Enforce submission status transition validation rules
-- Add global exception middleware
-- Add input validation on DTOs
+- Enforce submission status transition validation rules (backend)
+- Add global exception middleware (backend)
+- Wire up FluentValidation on DTOs (package already referenced, no validators yet)
 - Complete Swagger annotations for remaining endpoints
-- Build the Next.js frontend (auth, dashboard, products, submission board, audit log)
+- Product create/edit form pages (frontend)
+- Documents feature: list, detail, and create pages (frontend)
+- Submission package board / status workflow UI (frontend)
+- `AuditLogDrawer` timeline component (frontend)
+- Dashboard/home page (frontend)
 - Add Docker/docker-compose and deployment setup for Railway and Vercel
+
+---
+
+## [0.12.0] - 2026-08-16
+
+### Added
+
+- Products feature on the frontend:
+  - `Product` / `CreateProductDto` types mirroring backend DTOs field-for-field (nullable `din`/`npn`)
+  - `lib/session.ts` — reads a non-httpOnly "session hint" cookie server-side to expose `getSession()` and `isRegAffairsOfficer()` for UI-only role gating
+  - `lib/products.ts` — typed data layer (list, get-by-id, create, archive), all routed through `apiFetch`
+  - `/products` — Server Component list page: table view, role-gated "New Product" link, empty state
+  - `/products/[id]` — dynamic detail page, calls `notFound()` on a 404 from the API
+- Authenticated shell on the frontend:
+  - `LogoutButton` (Client Component) — POSTs to the logout route and redirects to `/login`
+  - `NavBar` (Server Component) — shows the signed-in user's name/role and a logout control, or a "Sign in" link when logged out
+  - Root layout renders `NavBar` on every page
+  - Login route now also sets a non-secret "session hint" cookie (`pharmadocs_session`) alongside the httpOnly JWT cookie; logout route clears both
+
+### Fixed
+
+- `ProductsController.Create` now rejects duplicate active products sharing the same DIN (`400 Bad Request`), preventing accidental duplicate entries from repeated form/test submissions
+
+---
+
+## [0.11.0] - 2026-08-03
+
+### Added
+
+- Next.js 16 App Router project scaffolded at `frontend/pharma-docs-web` — TypeScript strict mode, Tailwind CSS v4, ESLint
+- `lib/types.ts` — TypeScript types mirroring backend DTOs and enums (`LoginDto`, `AuthResponseDto`, `SessionUser`, role/status/type unions)
+- `lib/api.ts` — server-only typed `apiFetch()` client wrapper; attaches the JWT from the httpOnly cookie as a Bearer token on every backend call
+- `app/api/auth/login/route.ts` and `app/api/auth/logout/route.ts` — Route Handlers that proxy authentication to the backend; the JWT is stored in an httpOnly cookie and never reaches client-side JavaScript
+- `/login` page (Client Component) with a working sign-in form
+- `src/proxy.ts` — Next.js 16's renamed middleware; optimistic auth guard that redirects unauthenticated requests to `/login`
+
+---
+
+## [0.10.0] - 2026-07-04
+
+### Added
+
+- `PATCH /api/products/{id}/unarchive`, `PATCH /api/documents/{id}/unarchive`, `PATCH /api/submissionpackages/{id}/unarchive` — restore soft-deleted (archived) resources; returns `404` if the resource is not currently archived
+- `.github/copilot-instructions.md` workspace configuration for AI-assisted development
+
+### Fixed
+
+- Added missing `InProgress` value to the `SubmissionStatus` enum (between `Draft` and `Submitted`)
+- Corrected seed data comment — seeded password is `Demo1234!`
+- Aligned `API-TESTING-GUIDE.md`, `curl-commands.txt`, and `test-api.ps1` with the current v0.10.0 endpoint set and seeded document references
+
+Backend reached feature-complete status as of this release — active development moved to the frontend.
 
 ---
 
