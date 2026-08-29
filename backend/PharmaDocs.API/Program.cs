@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using FluentValidation;
+using PharmaDocs.Application.DTOs;
+using PharmaDocs.Application.Validators;
 using PharmaDocs.Infrastructure.Data;
 using PharmaDocs.Infrastructure.Services;
 using System.Text;
@@ -62,6 +65,9 @@ builder.Services.AddDbContext<PharmaDocsDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddScoped<JwtTokenService>();
+
+builder.Services.AddScoped<IValidator<CreateProductDto>, CreateProductDtoValidator>();
+builder.Services.AddScoped<IValidator<UpdateProductDto>, UpdateProductDtoValidator>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

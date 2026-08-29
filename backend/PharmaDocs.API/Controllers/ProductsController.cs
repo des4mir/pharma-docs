@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using FluentValidation;
 using PharmaDocs.Domain.Entities;
 using PharmaDocs.Infrastructure.Data;
 using PharmaDocs.Application.DTOs;
@@ -15,10 +16,17 @@ namespace PharmaDocs.API.Controllers;
 public class ProductsController : ControllerBase
 {
     private readonly PharmaDocsDbContext _context;
+    private readonly IValidator<CreateProductDto> _createValidator;
+    private readonly IValidator<UpdateProductDto> _updateValidator;
 
-    public ProductsController(PharmaDocsDbContext context)
+    public ProductsController(
+        PharmaDocsDbContext context,
+        IValidator<CreateProductDto> createValidator,
+        IValidator<UpdateProductDto> updateValidator)
     {
         _context = context;
+        _createValidator = createValidator;
+        _updateValidator = updateValidator;
     }
 
     /// <summary>Get all active (non-archived) products. Requires authentication.</summary>
@@ -58,6 +66,10 @@ public class ProductsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Create([FromBody] CreateProductDto dto)
     {
+        var validationResult = await _createValidator.ValidateAsync(dto);
+        if (!validationResult.IsValid)
+            return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
+
         // Prevent duplicate active products for the same DIN (e.g. repeated test/form submissions).
         if (!string.IsNullOrWhiteSpace(dto.DIN))
         {
@@ -114,6 +126,10 @@ public class ProductsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateProductDto dto)
     {
+        var validationResult = await _updateValidator.ValidateAsync(dto);
+        if (!validationResult.IsValid)
+            return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
+
         var product = await _context.Products
             .Include(p => p.CreatedBy)
             .FirstOrDefaultAsync(p => p.Id == id && !p.IsArchived);
