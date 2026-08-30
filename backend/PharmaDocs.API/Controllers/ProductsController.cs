@@ -70,14 +70,12 @@ public class ProductsController : ControllerBase
         if (!validationResult.IsValid)
             return BadRequest(new { errors = validationResult.Errors.Select(e => e.ErrorMessage) });
 
-        // Prevent duplicate active products for the same DIN (e.g. repeated test/form submissions).
-        if (!string.IsNullOrWhiteSpace(dto.DIN))
-        {
-            var dinExists = await _context.Products
-                .AnyAsync(p => !p.IsArchived && p.DIN == dto.DIN);
-            if (dinExists)
-                return BadRequest(new { message = $"An active product with DIN '{dto.DIN}' already exists." });
-        }
+        // Prevent duplicate active products sharing the same DIN or NPN (e.g. repeated
+        // test/form submissions). DIN/NPN are only ever set at creation time, so this
+        // check only needs to run here — Update no longer accepts either field.
+        var duplicateError = await FindDuplicateIdentifierErrorAsync(dto.DIN, dto.NPN);
+        if (duplicateError is not null)
+            return BadRequest(new { message = duplicateError });
 
         var actorId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var actorName = User.FindFirstValue(ClaimTypes.Name) ?? "Unknown";
@@ -141,8 +139,7 @@ public class ProductsController : ControllerBase
         var oldSnapshot = $"{{\"Name\":\"{product.Name}\",\"Manufacturer\":\"{product.Manufacturer}\"}}";
 
         product.Name = dto.Name;
-        product.DIN = dto.DIN;
-        product.NPN = dto.NPN;
+        // DIN/NPN are immutable after creation and are not part of UpdateProductDto.
         product.MedicinalIngredient = dto.MedicinalIngredient;
         product.Manufacturer = dto.Manufacturer;
         product.DosageForm = dto.DosageForm;
@@ -234,6 +231,25 @@ public class ProductsController : ControllerBase
 
         await _context.SaveChangesAsync();
         return NoContent();
+    }
+
+    private async Task<string?> FindDuplicateIdentifierErrorAsync(string? din, string? npn)
+    {
+        if (!string.IsNullOrWhiteSpace(din))
+        {
+            var dinExists = await _context.Products.AnyAsync(p => !p.IsArchived && p.DIN == din);
+            if (dinExists)
+                return $"An active product with DIN '{din}' already exists.";
+        }
+
+        if (!string.IsNullOrWhiteSpace(npn))
+        {
+            var npnExists = await _context.Products.AnyAsync(p => !p.IsArchived && p.NPN == npn);
+            if (npnExists)
+                return $"An active product with NPN '{npn}' already exists.";
+        }
+
+        return null;
     }
 
     private static ProductResponseDto ToDto(Product p) => new()

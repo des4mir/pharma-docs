@@ -83,14 +83,12 @@ curl -s -X POST http://localhost:5046/api/products \
     "therapeuticCategory": "Analgesic"
   }' | jq .
 
-# PUT update product (RegAffairsOfficer only)
+# PUT update product (RegAffairsOfficer only) — DIN/NPN are immutable and not accepted here
 curl -s -X PUT http://localhost:5046/api/products/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Atorvastatin 40mg",
-    "din": "02241127",
-    "npn": null,
     "medicinalIngredient": "Atorvastatin Calcium",
     "manufacturer": "Apotex Inc.",
     "dosageForm": "Tablet",

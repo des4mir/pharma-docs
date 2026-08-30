@@ -74,6 +74,8 @@ Assigned by Health Canada to every approved drug product sold in Canada. A produ
 **NPN — Natural Product Number**  
 Equivalent to DIN but for natural health products (vitamins, herbal remedies, homeopathic medicines) regulated under the Natural Health Products Regulations. Also nullable for the same reason.
 
+A product has exactly one of DIN or NPN, never both and never neither, enforced at creation. Both are immutable once the product is created — they represent regulatory identity, not a descriptive attribute. If a product's identifier needs to change, archive the product and create a new one rather than editing it in place.
+
 ---
 
 ## Workflow Summary

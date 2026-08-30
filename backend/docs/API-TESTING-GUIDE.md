@@ -68,6 +68,7 @@
 - `GET` returns only non-archived products, ordered by name
 - `GET /{id}` returns `404` if the product does not exist or is archived
 - Archive returns `204 No Content`; returns `404` if already archived
+- `DIN`/`NPN` are set only at creation and are immutable — `PUT` does not accept either field; to change an identifier, archive the product and create a new one
 - Unarchive returns `204 No Content`; returns `404` if the product does not exist or is not archived
 
 ---

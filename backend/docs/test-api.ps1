@@ -115,7 +115,7 @@ Assert "POST /api/products -- officer 201" (Call "POST" "$BaseUrl/api/products" 
 Assert "POST /api/products -- viewer 403"  (Call "POST" "$BaseUrl/api/products" $ViewerToken $newProduct) 403
 
 $updProduct = @{
-    name = "Atorvastatin 40mg"; din = "02241127"; npn = $null
+    name = "Atorvastatin 40mg"
     medicinalIngredient = "Atorvastatin Calcium"; manufacturer = "Apotex Inc."
     dosageForm = "Tablet"; routeOfAdministration = "Oral"; therapeuticCategory = "Antihyperlipidemic"
 }
