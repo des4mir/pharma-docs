@@ -79,6 +79,18 @@ export interface CreateProductDto {
   therapeuticCategory: string;
 }
 
+// Mirrors PharmaDocs.Application.DTOs.UpdateProductDto
+// DIN/NPN are intentionally absent. They represent a product's Health Canada
+// regulatory identity and are immutable after creation
+export interface UpdateProductDto {
+  name: string;
+  medicinalIngredient: string;
+  manufacturer: string;
+  dosageForm: string;
+  routeOfAdministration: string;
+  therapeuticCategory: string;
+}
+
 // The user data exposed to the client after login — never includes the raw JWT.
 export interface SessionUser {
   fullName: string;
