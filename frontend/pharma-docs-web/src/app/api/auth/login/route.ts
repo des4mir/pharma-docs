@@ -9,13 +9,19 @@ import { apiFetch, ApiError, AUTH_COOKIE_NAME } from "@/lib/api";
 import type { AuthResponseDto, LoginDto, SessionUser } from "@/lib/types";
 import { SESSION_COOKIE_NAME } from "@/lib/session";
 
+// COOKIE_SECURE lets local Docker runs over plain HTTP opt out of the Secure
+// flag; unset, it falls back to NODE_ENV so production still defaults to on.
+const isSecureCookie = process.env.COOKIE_SECURE
+  ? process.env.COOKIE_SECURE === "true"
+  : process.env.NODE_ENV === "production";
+
 export async function POST(request: Request) {
   const body = (await request.json()) as Partial<LoginDto>;
 
   if (!body.email || !body.password) {
     return NextResponse.json(
       { message: "Email and password are required." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -31,7 +37,7 @@ export async function POST(request: Request) {
     const cookieStore = await cookies();
     cookieStore.set(AUTH_COOKIE_NAME, auth.token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: isSecureCookie,
       sameSite: "lax",
       path: "/",
       expires: new Date(auth.expiresAt),
@@ -45,7 +51,7 @@ export async function POST(request: Request) {
 
     cookieStore.set(SESSION_COOKIE_NAME, JSON.stringify(sessionUser), {
       httpOnly: false, // readable by Server Components via next/headers, and could be read client-side too — contains no secret
-      secure: process.env.NODE_ENV === "production",
+      secure: isSecureCookie,
       sameSite: "lax",
       path: "/",
       expires: new Date(auth.expiresAt),
@@ -56,13 +62,13 @@ export async function POST(request: Request) {
     if (error instanceof ApiError) {
       return NextResponse.json(
         { message: error.message || "Invalid email or password." },
-        { status: error.status }
+        { status: error.status },
       );
     }
 
     return NextResponse.json(
       { message: "Unable to reach the authentication service." },
-      { status: 502 }
+      { status: 502 },
     );
   }
 }

@@ -1,0 +1,57 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-pharmadocs}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-pharmadocs}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: PharmaDocs.API/Dockerfile
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-pharmadocs};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}"
+      Jwt__Key: ${JWT_KEY:?Set JWT_KEY in .env (32+ chars)}
+      Jwt__Issuer: ${JWT_ISSUER:-PharmaDocs.API}
+      Jwt__Audience: ${JWT_AUDIENCE:-PharmaDocs.Client}
+      Jwt__ExpiryMinutes: ${JWT_EXPIRY_MINUTES:-60}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${API_PORT:-8080}:8080"
+
+  web:
+    build:
+      context: ./frontend/pharma-docs-web
+      dockerfile: Dockerfile
+      args:
+        # Internal Docker network address: the Next.js server calls the API
+        # container-to-container, the browser never calls it directly.
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://api:8080}
+    restart: unless-stopped
+    environment:
+      PORT: 8080
+      NODE_ENV: ${NODE_ENV:-production}
+      # Off by default so login works over plain HTTP in local Docker; set to
+      # "true" when fronted by HTTPS (e.g. Cloud Run).
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+    depends_on:
+      - api
+    ports:
+      - "${WEB_PORT:-3000}:8080"
+
+volumes:
+  postgres-data:

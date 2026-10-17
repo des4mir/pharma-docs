@@ -98,6 +98,14 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// Apply pending migrations (and HasData seed rows) on startup so a fresh,
+// empty container database is schema-ready without a separate CLI step.
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<PharmaDocsDbContext>();
+    dbContext.Database.Migrate();
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
