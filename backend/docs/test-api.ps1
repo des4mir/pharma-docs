@@ -51,6 +51,23 @@ function Call($Method, $Url, $Token = $null, $Body = $null) {
     }
 }
 
+# Like Call, but for POST/create calls whose response body id we need later —
+# so the entity created by this run can be archived in Step 9 cleanup instead
+# of silently accumulating as an extra active row on every rerun (this is the
+# same class of bug that motivated the Products duplicate-DIN guard).
+function CallCreate($Method, $Url, $Token, $Body) {
+    $headers = @{ "Content-Type" = "application/json" }
+    if ($Token) { $headers["Authorization"] = "Bearer $Token" }
+    try {
+        $r = Invoke-WebRequest -Method $Method -Uri $Url -Headers $headers `
+            -Body ($Body | ConvertTo-Json -Depth 10) -ErrorAction Stop
+        return @{ StatusCode = $r.StatusCode; Id = ($r.Content | ConvertFrom-Json).id }
+    }
+    catch {
+        return @{ StatusCode = [int]$_.Exception.Response.StatusCode; Id = $null }
+    }
+}
+
 # ============================================================
 Write-Host "`n=== STEP 1: Auth ===" -ForegroundColor Cyan
 # ============================================================
@@ -106,12 +123,18 @@ Assert "GET /api/products/{id} -- unknown GUID 404" `
 Write-Host "`n=== STEP 3: Products — write ===" -ForegroundColor Cyan
 # ============================================================
 
+# DIN is randomized per run: ProductsController rejects a duplicate DIN on any
+# active product, so a hardcoded value would only succeed on the very first
+# run and then fail every rerun until manually cleaned up.
+$TestDin = "9" + (Get-Random -Minimum 1000000 -Maximum 9999999)
 $newProduct = @{
-    name = "Aspirin 500mg"; din = "00000001"; npn = $null
+    name = "Aspirin 500mg"; din = $TestDin; npn = $null
     medicinalIngredient = "Acetylsalicylic Acid"; manufacturer = "Test Corp"
     dosageForm = "Tablet"; routeOfAdministration = "Oral"; therapeuticCategory = "Analgesic"
 }
-Assert "POST /api/products -- officer 201" (Call "POST" "$BaseUrl/api/products" $OfficerToken $newProduct) 201
+$productResult = CallCreate "POST" "$BaseUrl/api/products" $OfficerToken $newProduct
+Assert "POST /api/products -- officer 201" $productResult.StatusCode 201
+$NewProductId = $productResult.Id
 Assert "POST /api/products -- viewer 403"  (Call "POST" "$BaseUrl/api/products" $ViewerToken $newProduct) 403
 
 $updProduct = @{
@@ -154,7 +177,9 @@ $newDoc = @{
     version = "1.0"; date = "2026-06-24"; notes = "Test via PS1"
     productId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
 }
-Assert "POST /api/documents -- officer 201" (Call "POST" "$BaseUrl/api/documents" $OfficerToken $newDoc) 201
+$docResult = CallCreate "POST" "$BaseUrl/api/documents" $OfficerToken $newDoc
+Assert "POST /api/documents -- officer 201" $docResult.StatusCode 201
+$NewDocumentId = $docResult.Id
 Assert "POST /api/documents -- viewer 403"  (Call "POST" "$BaseUrl/api/documents" $ViewerToken $newDoc) 403
 
 $updDoc = @{
@@ -196,8 +221,9 @@ $newPkg = @{
     submissionType = "NDS"; regulatoryBody = "Health Canada"
     productId = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"; targetDate = "2026-12-31"
 }
-Assert "POST /api/submissionpackages -- officer 201" `
-(Call "POST" "$BaseUrl/api/submissionpackages" $OfficerToken $newPkg) 201
+$pkgResult = CallCreate "POST" "$BaseUrl/api/submissionpackages" $OfficerToken $newPkg
+Assert "POST /api/submissionpackages -- officer 201" $pkgResult.StatusCode 201
+$NewPackageId = $pkgResult.Id
 Assert "POST /api/submissionpackages -- viewer 403" `
 (Call "POST" "$BaseUrl/api/submissionpackages" $ViewerToken $newPkg) 403
 
@@ -274,6 +300,21 @@ Assert "PATCH /api/submissionpackages/{id}/unarchive -- viewer 403" `
 (Call "PATCH" "$BaseUrl/api/submissionpackages/eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee/unarchive" $ViewerToken) 403
 Assert "PATCH /api/submissionpackages/{id}/unarchive -- officer 204" `
 (Call "PATCH" "$BaseUrl/api/submissionpackages/eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee/unarchive" $OfficerToken) 204
+
+# Archive the entities this run created (not the seeded ones) so the next run
+# starts clean instead of leaving active duplicate rows behind indefinitely.
+if ($NewProductId) {
+    Assert "PATCH /api/products/{id}/archive -- cleanup this run's test product 204" `
+    (Call "PATCH" "$BaseUrl/api/products/$NewProductId/archive" $OfficerToken) 204
+}
+if ($NewDocumentId) {
+    Assert "PATCH /api/documents/{id}/archive -- cleanup this run's test document 204" `
+    (Call "PATCH" "$BaseUrl/api/documents/$NewDocumentId/archive" $OfficerToken) 204
+}
+if ($NewPackageId) {
+    Assert "PATCH /api/submissionpackages/{id}/archive -- cleanup this run's test package 204" `
+    (Call "PATCH" "$BaseUrl/api/submissionpackages/$NewPackageId/archive" $OfficerToken) 204
+}
 
 # ============================================================
 Write-Host "`n============================================================" -ForegroundColor Cyan

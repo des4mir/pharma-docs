@@ -2,7 +2,7 @@
 
 **Base URL:** `http://localhost:5046`  
 **Version:** 0.10.0  
-**Last updated:** 2026-07-04
+**Last updated:** 2026-09-02
 
 ---
 
@@ -69,6 +69,9 @@
 - `GET /{id}` returns `404` if the product does not exist or is archived
 - Archive returns `204 No Content`; returns `404` if already archived
 - `DIN`/`NPN` are set only at creation and are immutable — `PUT` does not accept either field; to change an identifier, archive the product and create a new one
+- `POST` requires **exactly one** of `DIN` or `NPN` (never both, never neither) — `400` otherwise
+- When present, `DIN`/`NPN` must each be exactly 8 digits — `400` otherwise
+- `POST` returns `400` if an active (non-archived) product already has the same `DIN` or `NPN` — archive the existing one first if you need to reuse the identifier
 - Unarchive returns `204 No Content`; returns `404` if the product does not exist or is not archived
 
 ---
@@ -184,13 +187,18 @@ The smoke test calls `PATCH /unarchive` as Sarah for the seeded product, documen
 
 ### Step 3 — Products: writes
 
-- POST (officer) → `201 Created`
+- POST with a fresh, unused DIN (officer) → `201 Created`
 - POST (viewer) → `403 Forbidden`
+- POST with both DIN and NPN set → `400 Bad Request`
+- POST with a malformed DIN/NPN (not 8 digits) → `400 Bad Request`
+- POST reusing the DIN/NPN of an already-active product → `400 Bad Request`
 - PUT (officer) → `200 OK`
 - PUT (viewer) → `403 Forbidden`
 - PATCH `/{id}/archive` (viewer) → `403 Forbidden`
 - PATCH `/{id}/archive` (officer) → `204 No Content`
 - PATCH `/{id}/archive` again (already archived) → `404`
+
+> **Note:** the seeded products/`test-api.ps1`/`curl-commands.txt` use a randomly generated DIN for the POST test and archive the created product afterward, since a hardcoded DIN would only succeed on the very first run.
 
 ### Step 4 — Documents: reads
 

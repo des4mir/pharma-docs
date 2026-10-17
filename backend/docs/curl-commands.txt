@@ -69,19 +69,54 @@ curl -s http://localhost:5046/api/products/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa 
 curl -s http://localhost:5046/api/products -w "\nHTTP %{http_code}\n"
 
 # POST create product (RegAffairsOfficer only)
-curl -s -X POST http://localhost:5046/api/products \
+# DIN is randomized: an active product with the same DIN already exists causes
+# a 400 (see validation examples below), so a hardcoded value only works once.
+DIN=$(( ( RANDOM % 90000000 ) + 10000000 ))
+PRODUCT_ID=$(curl -s -X POST http://localhost:5046/api/products \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Aspirin 500mg",
-    "din": "00000001",
+    "din": "'"$DIN"'",
     "npn": null,
     "medicinalIngredient": "Acetylsalicylic Acid",
     "manufacturer": "Test Corp",
     "dosageForm": "Tablet",
     "routeOfAdministration": "Oral",
     "therapeuticCategory": "Analgesic"
-  }' | jq .
+  }' | tee /dev/stderr | jq -r .id)
+
+# Validation examples — CreateProductDto requires exactly one of DIN/NPN, both
+# must be exactly 8 digits, and an active product can't reuse another's DIN/NPN.
+
+# Both DIN and NPN set — expect 400 ("exactly one of DIN or NPN")
+curl -s -X POST http://localhost:5046/api/products \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"x","din":"11112222","npn":"33334444","medicinalIngredient":"x","manufacturer":"x","dosageForm":"x","routeOfAdministration":"x","therapeuticCategory":"x"}' \
+  -w "\nHTTP %{http_code}\n"
+
+# Malformed DIN (not 8 digits) — expect 400
+curl -s -X POST http://localhost:5046/api/products \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"x","din":"123","npn":null,"medicinalIngredient":"x","manufacturer":"x","dosageForm":"x","routeOfAdministration":"x","therapeuticCategory":"x"}' \
+  -w "\nHTTP %{http_code}\n"
+
+# Duplicate DIN on an already-active product — expect 400
+curl -s -X POST http://localhost:5046/api/products \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Aspirin 500mg (dup)",
+    "din": "'"$DIN"'",
+    "npn": null,
+    "medicinalIngredient": "Acetylsalicylic Acid",
+    "manufacturer": "Test Corp",
+    "dosageForm": "Tablet",
+    "routeOfAdministration": "Oral",
+    "therapeuticCategory": "Analgesic"
+  }' -w "\nHTTP %{http_code}\n"
 
 # PUT update product (RegAffairsOfficer only) — DIN/NPN are immutable and not accepted here
 curl -s -X PUT http://localhost:5046/api/products/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb \
@@ -98,6 +133,11 @@ curl -s -X PUT http://localhost:5046/api/products/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbb
 
 # PATCH archive product (RegAffairsOfficer only) — returns 204
 curl -s -X PATCH http://localhost:5046/api/products/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/archive \
+  -H "Authorization: Bearer $TOKEN" \
+  -w "\nHTTP %{http_code}\n"
+
+# Cleanup: archive the test product created above so it doesn't accumulate
+curl -s -X PATCH http://localhost:5046/api/products/$PRODUCT_ID/archive \
   -H "Authorization: Bearer $TOKEN" \
   -w "\nHTTP %{http_code}\n"
 
@@ -123,7 +163,9 @@ curl -s http://localhost:5046/api/documents/cccccccc-cccc-cccc-cccc-cccccccccccc
   -H "Authorization: Bearer $TOKEN" | jq .
 
 # POST create document — status field required (RegAffairsOfficer only)
-curl -s -X POST http://localhost:5046/api/documents \
+# There's no uniqueness guard on documents, so re-running this repeatedly
+# creates additional active rows — archive it below when done testing.
+DOCUMENT_ID=$(curl -s -X POST http://localhost:5046/api/documents \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -134,7 +176,7 @@ curl -s -X POST http://localhost:5046/api/documents \
     "date": "2026-06-24",
     "notes": "Created via curl",
     "productId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
-  }' | jq .
+  }' | tee /dev/stderr | jq -r .id)
 
 # PUT update document (RegAffairsOfficer only)
 curl -s -X PUT http://localhost:5046/api/documents/cccccccc-cccc-cccc-cccc-cccccccccccc \
@@ -151,6 +193,11 @@ curl -s -X PUT http://localhost:5046/api/documents/cccccccc-cccc-cccc-cccc-ccccc
 
 # PATCH archive document (RegAffairsOfficer only) — returns 204
 curl -s -X PATCH http://localhost:5046/api/documents/cccccccc-cccc-cccc-cccc-cccccccccccc/archive \
+  -H "Authorization: Bearer $TOKEN" \
+  -w "\nHTTP %{http_code}\n"
+
+# Cleanup: archive the test document created above so it doesn't accumulate
+curl -s -X PATCH http://localhost:5046/api/documents/$DOCUMENT_ID/archive \
   -H "Authorization: Bearer $TOKEN" \
   -w "\nHTTP %{http_code}\n"
 
@@ -171,7 +218,8 @@ curl -s http://localhost:5046/api/submissionpackages/by-product/aaaaaaaa-aaaa-aa
   -H "Authorization: Bearer $TOKEN" | jq .
 
 # POST create submission package (RegAffairsOfficer only)
-curl -s -X POST http://localhost:5046/api/submissionpackages \
+# There's no uniqueness guard here either — archive it below when done testing.
+PACKAGE_ID=$(curl -s -X POST http://localhost:5046/api/submissionpackages \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -179,7 +227,7 @@ curl -s -X POST http://localhost:5046/api/submissionpackages \
     "regulatoryBody": "Health Canada",
     "productId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
     "targetDate": "2026-12-31"
-  }' | jq .
+  }' | tee /dev/stderr | jq -r .id)
 
 # PUT update submission package (RegAffairsOfficer only)
 curl -s -X PUT http://localhost:5046/api/submissionpackages/eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee \
@@ -200,6 +248,11 @@ curl -s -X PATCH http://localhost:5046/api/submissionpackages/eeeeeeee-eeee-eeee
 # PATCH archive (RegAffairsOfficer only) — blocked if Submitted or UnderReview
 # Returns 204 on success, 400 if status blocks archive
 curl -s -X PATCH http://localhost:5046/api/submissionpackages/eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee/archive \
+  -H "Authorization: Bearer $TOKEN" \
+  -w "\nHTTP %{http_code}\n"
+
+# Cleanup: archive the test package created above (still Draft, so not blocked)
+curl -s -X PATCH http://localhost:5046/api/submissionpackages/$PACKAGE_ID/archive \
   -H "Authorization: Bearer $TOKEN" \
   -w "\nHTTP %{http_code}\n"
 
